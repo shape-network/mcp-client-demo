@@ -12,8 +12,6 @@ A modern, production-ready starter template for building decentralized applicati
 - **Tailwind CSS** with theming and dark mode support
 - **Shadcn/ui** components with full customization
 - **Error Boundaries** for graceful error handling
-- **Environment validation** with helpful error messages
-- **Modern tooling** (ESLint, Prettier, Turbopack)
 
 ## 🚀 Quick Start
 
