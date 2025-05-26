@@ -1658,7 +1658,7 @@
   resolved "https://registry.yarnpkg.com/@radix-ui/rect/-/rect-1.1.1.tgz#78244efe12930c56fd255d7923865857c41ac8cb"
   integrity sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw==
 
-"@rainbow-me/rainbowkit@^2.2.5":
+"@rainbow-me/rainbowkit@2.2.5":
   version "2.2.5"
   resolved "https://registry.yarnpkg.com/@rainbow-me/rainbowkit/-/rainbowkit-2.2.5.tgz#b99b7b98fb920bbb9f1db242490ea179145bd637"
   integrity sha512-UWEffskEeem1HnHolKvR0FO0haA7CYkm1/M3QlKz/K3gc8N1rjLXit9FG3PJ7l/EKn79VQm25mu8ACkNWBI8sA==
@@ -2052,7 +2052,7 @@
   resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.77.1.tgz#180ae89457f80e1b24f48a2f28e8eb1d348e213f"
   integrity sha512-nfxVhy4UynChMFfN4NxwI8pktV9R3Zt/ROxOAe6pdOf8CigDLn26p+ex1YW5uien26BBICLmN0dTvIELHCs5vw==
 
-"@tanstack/react-query@^5.77.1":
+"@tanstack/react-query@5.77.1":
   version "5.77.1"
   resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.77.1.tgz#89fb66e0fb3f6a1359cf171ca4e883e111d2a58f"
   integrity sha512-qBwpxFg0+MZF0fICQwgvzwrVbcs7TdQlLyEd1f1dN83oeIALofCIAJHV7sPWu+BCS5tcXkG5CvOuf7yla8GYqQ==
@@ -2807,7 +2807,7 @@ ajv@^6.12.4:
     json-schema-traverse "^0.4.1"
     uri-js "^4.2.2"
 
-alchemy-sdk@^3.5.10:
+alchemy-sdk@3.5.10:
   version "3.5.10"
   resolved "https://registry.yarnpkg.com/alchemy-sdk/-/alchemy-sdk-3.5.10.tgz#7b9f693b5b6af896e0500e653752a3cc14e844a7"
   integrity sha512-DoYk4h5XbMLFyCXkSJBtPAEzM8REEyDtmXjj73jtdNZfQgUGubiltnVlgF+vEtdU8Gig2q9di753dpg3q//yZw==
@@ -6777,7 +6777,7 @@ viem@2.23.2:
     ox "0.6.7"
     ws "8.18.0"
 
-viem@>=2.23.11, viem@^2.1.1, viem@^2.30.1:
+viem@2.30.1, viem@>=2.23.11, viem@^2.1.1:
   version "2.30.1"
   resolved "https://registry.yarnpkg.com/viem/-/viem-2.30.1.tgz#22cdd653c57b4ff342524afd6974b08b302a7875"
   integrity sha512-CkoS5Vv6kiRGmRF2xO2z275Gu90vTrKZHf/ckYXxP2J94UvCnFvUcbRdfit6uebj1I8nFwkGlkkOMuOZDHyO4w==
@@ -6791,7 +6791,7 @@ viem@>=2.23.11, viem@^2.1.1, viem@^2.30.1:
     ox "0.7.1"
     ws "8.18.2"
 
-wagmi@^2.15.4:
+wagmi@2.15.4:
   version "2.15.4"
   resolved "https://registry.yarnpkg.com/wagmi/-/wagmi-2.15.4.tgz#a99818b4dcf3227b5084bceb608fdf6984cb71b4"
   integrity sha512-0m7uo6t/oSFS+4UCUTBnmIhDSP7PGJz1qx4VtALcsBnw81UPPIXMSM8oGVrUNV9CptryiDgBlh4iYmRldg9iaA==
