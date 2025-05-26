@@ -1,6 +1,6 @@
 # Builder Kit: Onchain Starter Template
 
-A modern, production-ready starter template for building decentralized applications with Next.js 15, Wagmi, and Shape Network. This template provides a solid foundation with sensible defaults and best practices.
+A modern, production-ready starter template for building decentralized applications with sensible defaults.
 
 <table width="100%">
   <tr>
@@ -18,7 +18,7 @@ A modern, production-ready starter template for building decentralized applicati
 - **Alchemy SDK** for performant blockchain interactions
 - **TypeScript** for type safety
 - **Tailwind CSS** with theming and dark mode support
-- **Shadcn/ui** components with full customization
+- **Shadcn/ui** for a large range of fully customizable and themable components
 - **Error Boundaries** for graceful error handling
 
 ## 🚀 Quick Start
