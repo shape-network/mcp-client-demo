@@ -4,8 +4,7 @@ import { config } from "@/lib/config";
 import { wagmiConfig } from "@/lib/web3";
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { usePathname, useSearchParams } from "next/navigation";
-import { ReactNode, Suspense, useEffect } from "react";
+import { ReactNode } from "react";
 import { shape, shapeSepolia } from "viem/chains";
 import { WagmiProvider } from "wagmi";
 
