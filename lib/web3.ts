@@ -7,7 +7,7 @@ import { http } from "viem";
 import { mainnet, shape, shapeSepolia } from "viem/chains";
 
 export const wagmiConfig = getDefaultConfig({
-  appName: "dApp Starter",
+  appName: "Builder Kit",
   ssr: true,
   projectId: config.walletConnectProjectId,
   chains: [shape, shapeSepolia, mainnet],

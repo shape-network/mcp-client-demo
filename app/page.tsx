@@ -14,11 +14,11 @@ export default function Home() {
     <div className="flex min-h-[calc(100vh-200px)] flex-col items-center justify-center space-y-8">
       <div className="space-y-4 text-center">
         <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-          dApp Starter
+          Builder Kit
         </h1>
         <p className="text-muted-foreground max-w-2xl text-xl">
-          A modern & minimal starter kit for building decentralized applications
-          with Next.js, Wagmi, and Shape Network
+          A modern & minimal starter template for building decentralized
+          applications with Next.js, Wagmi, and Shape Network
         </p>
       </div>
 
@@ -71,7 +71,7 @@ export default function Home() {
 
       <div className="flex flex-wrap items-center justify-center gap-4">
         <Button asChild>
-          <Link href="https://github.com/shape-network/dapp-starter">
+          <Link href="https://github.com/shape-network/builder-kit">
             <ArrowTopRightIcon className="mr-2 h-4 w-4" />
             View Source
           </Link>
