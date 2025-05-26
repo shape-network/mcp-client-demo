@@ -6,7 +6,7 @@ A modern, streamlined starter template for building decentralized applications w
 
 - Next.js 15 with App Router
 - Ethereum integration with Wagmi
-- Batteries-included UI components with Shadcn UI
+- Fully customizable and batteries-included UI components with Shadcn UI: tweak `global.css` with your own custom theme
 - Blockchain interactions with Alchemy SDK
 - RainbowKit for wallet connection
 - Full TypeScript support
