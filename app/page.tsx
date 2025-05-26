@@ -47,8 +47,8 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Leverages the latest web technologies for optimal performance and
-              developer experience.
+              Great performance, developer experience and beautiful design out
+              of the box.
             </p>
           </CardContent>
         </Card>
