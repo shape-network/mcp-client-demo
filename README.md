@@ -2,10 +2,10 @@
 
 A modern, production-ready starter template for building decentralized applications with Next.js 15, Wagmi, and Shape Network. This template provides a solid foundation with sensible defaults and best practices.
 
-<table>
+<table width="100%">
   <tr>
-    <td><img src="./public/lp-1.png" alt="dApp Starter Screenshot 1" width="300"/></td>
-    <td><img src="./public/lp-2.png" alt="dApp Starter Screenshot 2" width="300"/></td>
+    <td width="50%"><img src="./public/lp-1.png" alt="dApp Starter Screenshot 1" width="100%"/></td>
+    <td width="50%"><img src="./public/lp-2.png" alt="dApp Starter Screenshot 2" width="100%"/></td>
   </tr>
 </table>
 
