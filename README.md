@@ -76,6 +76,8 @@ See deployed website: [builder-kit.vercel.app](https://builder-kit.vercel.app/)
 
 ```
 ├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   │   ├── get-nfts/     # Fetch NFTs for address
 ├── components/            # React components
 │   ├── ui/               # Shadcn/ui components
 │   ├── error-boundary.tsx
@@ -84,6 +86,9 @@ See deployed website: [builder-kit.vercel.app](https://builder-kit.vercel.app/)
 │   ├── theme-toggle.tsx
 │   └── wallet-connect.tsx
 ├── hooks/                 # Custom React hooks
+│   ├── web3.ts           # Web3 data fetching hooks
+│   ├── use-balance.ts    # Wallet balance hook
+│   ├── use-mobile.ts     # Mobile detection hook
 ├── lib/                   # Utility functions and configurations
 │   ├── clients.ts        # Alchemy and RPC clients
 │   ├── config.ts         # Environment configuration
