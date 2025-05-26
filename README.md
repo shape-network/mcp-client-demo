@@ -9,6 +9,8 @@ A modern, production-ready starter template for building decentralized applicati
   </tr>
 </table>
 
+See deployed website: [builder-kit.vercel.app](https://builder-kit.vercel.app/)
+
 ## ✨ Features
 
 - **Next.js 15** with App Router and React 19
