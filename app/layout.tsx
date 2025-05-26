@@ -33,7 +33,7 @@ export default function RootLayout({
       >
         <Providers>
           <div className="grid grid-rows-[1fr,auto] items-center p-5 font-[family-name:var(--font-geist-sans)]">
-            <header className="flex flex-col items-start gap-4 ">
+            <header className="flex items-center justify-between gap-4 ">
               <Link href="/">
                 <Image
                   src="/shape_logo_black.svg"
