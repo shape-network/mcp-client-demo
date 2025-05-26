@@ -51,8 +51,16 @@ export const metadata: Metadata = {
     url: "https://builder-kit.vercel.app",
     title: "Builder Kit - Shape Network",
     description:
-      "A modern & minimal web3 starter kit for building decentralized applications with Next.js, Wagmi, and Shape Network. Get started quickly with pre-configured wallet connections and smart contract interactions.",
+      "A modern & minimal web3 starter kit for building decentralized applications with Next.js, Wagmi, and Shape Network. Get quickly started onchain with sensible defaults for a great user & developer experience.",
     siteName: "Builder Kit",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Builder Kit - Shape Network",
+    description:
+      "A modern & minimal web3 starter kit for building decentralized applications with Next.js, Wagmi, and Shape Network.",
+    site: "@Shape_L2",
+    creator: "@Shape_L2",
   },
   robots: {
     index: true,
@@ -68,6 +76,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.ico",
   },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
