@@ -42,3 +42,7 @@ yarn dev
 - [Shadcn UI Documentation](https://ui.shadcn.com)
 - [Alchemy SDK Documentation](https://docs.alchemy.com/reference/alchemy-sdk-quickstart)
 - [RainbowKit Documentation](https://www.rainbowkit.com/docs/introduction)
+
+## Support
+
+Have questions or want to contribute? Reach out to the core team on [Discord](http://discord.com/invite/shape-l2), on Twitter/X at [@Shape_L2](https://x.com/Shape_L2) or [@williamhzo](https://x.com/williamhzo).
