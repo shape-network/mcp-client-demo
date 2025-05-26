@@ -13,6 +13,7 @@ A modern, production-ready starter template for building decentralized applicati
 
 - **Next.js 15** with App Router and React 19
 - **Web3 Integration** with Wagmi v2 and RainbowKit
+- **React Query** for data fetching
 - **Shape Network** support (Mainnet & Sepolia)
 - **Alchemy SDK** for performant blockchain interactions
 - **TypeScript** for type safety
