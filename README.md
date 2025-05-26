@@ -4,8 +4,8 @@ A modern, production-ready starter template for building decentralized applicati
 
 <table width="100%">
   <tr>
-    <td width="50%"><img src="./public/lp-1.png" alt="dApp Starter Screenshot 1" width="100%"/></td>
-    <td width="50%"><img src="./public/lp-2.png" alt="dApp Starter Screenshot 2" width="100%"/></td>
+    <td width="50%"><img src="./public/lp-1.png" alt="Builder Kit Screenshot 1" width="100%"/></td>
+    <td width="50%"><img src="./public/lp-2.png" alt="Builder Kit Screenshot 2" width="100%"/></td>
   </tr>
 </table>
 
@@ -25,8 +25,8 @@ A modern, production-ready starter template for building decentralized applicati
 1. **Clone or use as template**
 
    ```bash
-   git clone https://github.com/shape-network/dapp-starter.git
-   cd dapp-starter
+   git clone https://github.com/shape-network/builder-kit.git
+   cd builder-kit
    ```
 
 2. **Install dependencies**
