@@ -3,7 +3,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { WalletConnect } from "@/components/wallet-connect";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
 
