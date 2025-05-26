@@ -17,9 +17,54 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Builder Kit - Shape",
+  title: {
+    default: "Builder Kit - Shape Network",
+    template: "%s | Builder Kit - Shape Network",
+  },
   description:
-    "A modern & minimal web3 starter kit for building decentralized applications",
+    "A modern & minimal web3 starter kit for building decentralized applications with Next.js, Wagmi, and Shape Network. Get quickly started onchain with sensible defaults for a great user & developer experience.",
+  keywords: [
+    "web3",
+    "blockchain",
+    "dapp",
+    "decentralized applications",
+    "shape network",
+    "ethereum",
+    "wagmi",
+    "builder",
+    "rainbowkit",
+    "nextjs",
+    "typescript",
+    "tailwind",
+    "starter kit",
+    "template",
+    "smart contracts",
+    "wallet connect",
+  ],
+  metadataBase: new URL("https://builder-kit.vercel.app"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://builder-kit.vercel.app",
+    title: "Builder Kit - Shape Network",
+    description:
+      "A modern & minimal web3 starter kit for building decentralized applications with Next.js, Wagmi, and Shape Network. Get started quickly with pre-configured wallet connections and smart contract interactions.",
+    siteName: "Builder Kit",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   icons: {
     icon: "/favicon.ico",
   },
@@ -77,7 +122,7 @@ export default function RootLayout({
                   href="https://shape.network/"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-muted-foreground text-center text-left text-sm leading-loose hover:underline"
+                  className="text-muted-foreground text-left text-sm leading-loose hover:underline"
                 >
                   shape.network
                 </Link>
