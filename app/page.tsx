@@ -17,7 +17,7 @@ export default function Home() {
           dApp Starter
         </h1>
         <p className="text-muted-foreground max-w-2xl text-xl">
-          A modern & sleek starter kit for building decentralized applications
+          A modern & minimal starter kit for building decentralized applications
           with Next.js, Wagmi, and Shape Network
         </p>
       </div>

@@ -18,7 +18,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "dApp Starter - Shape",
-  description: "A modern & sleek starter kit for building dApps",
+  description:
+    "A modern & minimal starter kit for building decentralized applications",
   icons: {
     icon: "/favicon.ico",
   },
