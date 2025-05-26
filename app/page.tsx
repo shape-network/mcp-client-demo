@@ -42,7 +42,7 @@ export default function Home() {
           <CardHeader>
             <CardTitle>Modern Stack</CardTitle>
             <CardDescription>
-              Built with Next.js 15, TypeScript, and Tailwind CSS
+              Built with Next.js 15, TypeScript, Shadcn/ui and Tailwind CSS
             </CardDescription>
           </CardHeader>
           <CardContent>
