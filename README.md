@@ -1,4 +1,4 @@
-# dApp Starter Template
+# Builder Kit: Onchain Starter Template
 
 A modern, production-ready starter template for building decentralized applications with Next.js 15, Wagmi, and Shape Network. This template provides a solid foundation with sensible defaults and best practices.
 
