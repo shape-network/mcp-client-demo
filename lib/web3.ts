@@ -6,11 +6,12 @@ import { http } from "viem";
 import { mainnet, shape, shapeSepolia } from "viem/chains";
 
 const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_KEY;
+const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID as string;
 
 export const wagmiConfig = getDefaultConfig({
   appName: "dApp Starter",
   ssr: true,
-  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID as string,
+  projectId,
   chains: [shape, shapeSepolia, mainnet],
   transports: {
     [shape.id]: http(`https://shape-mainnet.g.alchemy.com/v2/${alchemyKey}`, {

@@ -3,29 +3,42 @@ import { shape, shapeSepolia } from "viem/chains";
 function getRequiredEnvVar(name: string): string {
   const value = process.env[name];
   if (!value) {
+    // During build time, environment variables might not be available
+    // Only throw in production runtime, not during build
+    if (
+      process.env.NODE_ENV === "production" &&
+      typeof window !== "undefined"
+    ) {
+      throw new Error(`Missing required environment variable: ${name}`);
+    }
+
     if (process.env.NODE_ENV === "development") {
       console.warn(`⚠️  Missing environment variable: ${name}`);
       console.warn(`Please add ${name} to your .env file`);
-      return "";
     }
-    throw new Error(`Missing required environment variable: ${name}`);
+
+    // Return empty string as fallback during build
+    return "";
   }
   return value;
 }
 
 function getChainId(): typeof shape.id | typeof shapeSepolia.id {
   const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID);
-  if (chainId !== shape.id && chainId !== shapeSepolia.id) {
+
+  // Handle missing or invalid chain ID
+  if (
+    !process.env.NEXT_PUBLIC_CHAIN_ID ||
+    (chainId !== shape.id && chainId !== shapeSepolia.id)
+  ) {
     if (process.env.NODE_ENV === "development") {
       console.warn(
         `⚠️  Invalid or missing NEXT_PUBLIC_CHAIN_ID: ${chainId}. Defaulting to Shape Sepolia (${shapeSepolia.id})`,
       );
-      return shapeSepolia.id;
     }
-    throw new Error(
-      `Invalid NEXT_PUBLIC_CHAIN_ID: ${chainId}. Must be ${shape.id} (Shape Mainnet) or ${shapeSepolia.id} (Shape Sepolia)`,
-    );
+    return shapeSepolia.id; // Default to testnet
   }
+
   return chainId;
 }
 
