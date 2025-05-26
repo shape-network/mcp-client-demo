@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 export default function GlobalError({
   error,
   reset,
@@ -29,18 +31,13 @@ export default function GlobalError({
           </div>
 
           <div className="flex gap-4">
-            <button
-              onClick={reset}
-              className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-            >
-              Try again
-            </button>
-            <button
+            <Button onClick={reset}>Try again</Button>
+            <Button
               onClick={() => (window.location.href = "/")}
-              className="rounded-md border border-gray-300 px-4 py-2 hover:bg-gray-50"
+              variant="outline"
             >
               Go home
-            </button>
+            </Button>
           </div>
         </div>
       </body>
