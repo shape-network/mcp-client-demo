@@ -2,6 +2,9 @@
 
 A modern, production-ready starter template for building decentralized applications with Next.js 15, Wagmi, and Shape Network. This template provides a solid foundation with sensible defaults and best practices.
 
+![dApp Starter Screenshot 1](./public/lp-1.png)
+![dApp Starter Screenshot 2](./public/lp-2.png)
+
 ## ✨ Features
 
 - **Next.js 15** with App Router and React 19
