@@ -2,7 +2,11 @@
 
 import { config } from "@/lib/config";
 import { wagmiConfig } from "@/lib/web3";
-import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import {
+  darkTheme,
+  lightTheme,
+  RainbowKitProvider,
+} from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { ReactNode } from "react";
@@ -22,6 +26,10 @@ export const Providers = ({ children }: { children: ReactNode }) => {
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
           <RainbowKitProvider
+            theme={{
+              lightMode: lightTheme(),
+              darkMode: darkTheme(),
+            }}
             initialChain={config.chainId === shape.id ? shape : shapeSepolia}
           >
             {children}
