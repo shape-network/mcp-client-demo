@@ -1,23 +1,27 @@
-import Image from 'next/image';
+import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <header className="flex flex-col items-center gap-4 ">
-        <Image
-          src="/shape_logo_black.svg"
-          alt="Shape Logo"
-          width={100}
-          height={100}
-        />
-      </header>
+    <main className="flex flex-col gap-4 items-center justify-center min-h-[75dvh]">
+      <div className="flex flex-col items-center gap-2">
+        <h1 className="text-4xl font-bold mt-2 uppercase">dApp Starter</h1>
+        <h2>A modern & sleek starter kit for building dApps</h2>
+      </div>
 
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <div className="flex flex-col items-center gap-4">
-          <h1 className="text-4xl font-bold mt-2 uppercase">dApp Starter</h1>
-          <h2>A modern & sleek starter kit for building dApps</h2>
-        </div>
-      </main>
-    </div>
+      <div className="flex flex-col items-start gap-2">
+        <ul className="flex flex-col items-start gap-2 list-disc">
+          <li>
+            <Link href="/" className="hover:underline font-semibold">
+              Source Code
+            </Link>
+          </li>
+          <li>
+            <Link href="/" className="hover:underline font-semibold">
+              Shape Docs
+            </Link>
+          </li>
+        </ul>
+      </div>
+    </main>
   );
 }

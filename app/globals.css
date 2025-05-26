@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@utility debug {
+  outline-width: 2px;
+  outline-style: solid;
+  outline-color: rgba(255, 0, 0, 0.5);
+}
