@@ -19,6 +19,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "dApp Starter - Shape",
   description: "A modern & sleek starter kit for building dApps",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
