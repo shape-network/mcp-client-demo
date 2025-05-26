@@ -4,8 +4,8 @@ import { Address } from "viem";
 
 /**
  * Example hook to fetch NFTs for a user
- * @param address - The address of the user
- * @returns The NFTs for the user
+ * @param address - User's address to fetch NFTs for
+ * @returns react-query's respons object containing data, pending states, errors, etc
  */
 export function useGetNftForUser(address: Address) {
   return useQuery({
