@@ -1,66 +1,66 @@
-import { Providers } from "@/components/providers";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { WalletConnect } from "@/components/wallet-connect";
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
-import "./globals.css";
+import { Providers } from '@/components/providers';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { WalletConnect } from '@/components/wallet-connect';
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import Link from 'next/link';
+import './globals.css';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Builder Kit - Shape Network",
-    template: "%s | Builder Kit - Shape Network",
+    default: 'Builder Kit - Shape Network',
+    template: '%s | Builder Kit - Shape Network',
   },
   description:
-    "A modern & minimal web3 starter kit for building decentralized applications with Next.js, Wagmi, and Shape Network. Get quickly started onchain with sensible defaults for a great user & developer experience.",
+    'A modern & minimal web3 starter kit for building decentralized applications with Next.js, Wagmi, and Shape Network. Get quickly started onchain with sensible defaults for a great user & developer experience.',
   keywords: [
-    "web3",
-    "blockchain",
-    "dapp",
-    "decentralized applications",
-    "shape network",
-    "ethereum",
-    "wagmi",
-    "builder",
-    "rainbowkit",
-    "nextjs",
-    "typescript",
-    "tailwind",
-    "starter kit",
-    "template",
-    "smart contracts",
-    "wallet connect",
+    'web3',
+    'blockchain',
+    'dapp',
+    'decentralized applications',
+    'shape network',
+    'ethereum',
+    'wagmi',
+    'builder',
+    'rainbowkit',
+    'nextjs',
+    'typescript',
+    'tailwind',
+    'starter kit',
+    'template',
+    'smart contracts',
+    'wallet connect',
   ],
-  metadataBase: new URL("https://builder-kit.vercel.app"),
+  metadataBase: new URL('https://builder-kit.vercel.app'),
   alternates: {
-    canonical: "/",
+    canonical: '/',
   },
   openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://builder-kit.vercel.app",
-    title: "Builder Kit - Shape Network",
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://builder-kit.vercel.app',
+    title: 'Builder Kit - Shape Network',
     description:
-      "A modern & minimal web3 starter kit for building decentralized applications with Next.js, Wagmi, and Shape Network. Get quickly started onchain with sensible defaults for a great user & developer experience.",
-    siteName: "Builder Kit",
+      'A modern & minimal web3 starter kit for building decentralized applications with Next.js, Wagmi, and Shape Network. Get quickly started onchain with sensible defaults for a great user & developer experience.',
+    siteName: 'Builder Kit',
   },
   twitter: {
-    card: "summary_large_image",
-    title: "Builder Kit - Shape Network",
+    card: 'summary_large_image',
+    title: 'Builder Kit - Shape Network',
     description:
-      "A modern & minimal web3 starter kit for building decentralized applications with Next.js, Wagmi, and Shape Network.",
-    site: "@Shape_L2",
-    creator: "@Shape_L2",
+      'A modern & minimal web3 starter kit for building decentralized applications with Next.js, Wagmi, and Shape Network.',
+    site: '@Shape_L2',
+    creator: '@Shape_L2',
   },
   robots: {
     index: true,
@@ -68,15 +68,15 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
     },
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: '/favicon.ico',
   },
-  manifest: "/site.webmanifest",
+  manifest: '/site.webmanifest',
 };
 
 export default function RootLayout({
@@ -86,9 +86,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
           <div className="bg-background min-h-screen font-[family-name:var(--font-geist-sans)]">
             <header className="border-b">

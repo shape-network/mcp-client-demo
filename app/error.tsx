@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { AlertTriangleIcon, RefreshCwIcon } from "lucide-react";
-import { useEffect } from "react";
+import { Button } from '@/components/ui/button';
+import { AlertTriangleIcon, RefreshCwIcon } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function Error({
   error,
@@ -12,7 +12,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Application error:", error);
+    console.error('Application error:', error);
   }, [error]);
 
   return (
@@ -24,7 +24,7 @@ export default function Error({
         <p className="text-muted-foreground max-w-md">
           An unexpected error occurred. This could be a temporary issue.
         </p>
-        {process.env.NODE_ENV === "development" && error.message && (
+        {process.env.NODE_ENV === 'development' && error.message && (
           <details className="mt-4 text-left">
             <summary className="cursor-pointer text-sm font-medium">
               Error details (development only)
@@ -41,7 +41,7 @@ export default function Error({
           <RefreshCwIcon className="size-4" />
           Try again
         </Button>
-        <Button variant="outline" onClick={() => (window.location.href = "/")}>
+        <Button variant="outline" onClick={() => (window.location.href = '/')}>
           Go home
         </Button>
       </div>

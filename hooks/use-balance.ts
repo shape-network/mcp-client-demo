@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { config } from "@/lib/config";
-import { useAccount, useBalance } from "wagmi";
+import { config } from '@/lib/config';
+import { useAccount, useBalance } from 'wagmi';
 
 export function useWalletBalance() {
   const { address, isConnected } = useAccount();

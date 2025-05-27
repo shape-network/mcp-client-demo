@@ -1,24 +1,16 @@
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ArrowTopRightIcon } from "@radix-ui/react-icons";
-import Link from "next/link";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowTopRightIcon } from '@radix-ui/react-icons';
+import Link from 'next/link';
 
 export default function Home() {
   return (
     <div className="flex min-h-[calc(100vh-200px)] flex-col items-center justify-center space-y-8">
       <div className="space-y-4 text-center">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-          Builder Kit
-        </h1>
+        <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">Builder Kit</h1>
         <p className="text-muted-foreground max-w-2xl text-xl">
-          A modern & minimal starter template for building decentralized
-          applications with Next.js, Wagmi, and Shape Network
+          A modern & minimal starter template for building decentralized applications with Next.js,
+          Wagmi, and Shape Network
         </p>
       </div>
 
@@ -32,8 +24,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Connect wallets, interact with smart contracts, and manage
-              blockchain state with ease.
+              Connect wallets, interact with smart contracts, and manage blockchain state with ease.
             </p>
           </CardContent>
         </Card>
@@ -47,8 +38,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Great performance, developer experience and beautiful design out
-              of the box.
+              Great performance, developer experience and beautiful design out of the box.
             </p>
           </CardContent>
         </Card>
@@ -56,14 +46,11 @@ export default function Home() {
         <Card>
           <CardHeader>
             <CardTitle>Shape Network</CardTitle>
-            <CardDescription>
-              Optimized for Shape Mainnet and Sepolia testnet
-            </CardDescription>
+            <CardDescription>Optimized for Shape Mainnet and Sepolia testnet</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Built specifically for the Shape ecosystem with pre-configured RPC
-              endpoints.
+              Built specifically for the Shape ecosystem with pre-configured RPC endpoints.
             </p>
           </CardContent>
         </Card>
