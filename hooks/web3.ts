@@ -1,7 +1,7 @@
-import { alchemy } from "@/lib/clients";
-import { useQuery } from "@tanstack/react-query";
-import { OwnedNftsResponse } from "alchemy-sdk";
-import { Address } from "viem";
+import { alchemy } from '@/lib/clients';
+import { useQuery } from '@tanstack/react-query';
+import { OwnedNftsResponse } from 'alchemy-sdk';
+import { Address } from 'viem';
 
 /**
  * Example hook to fetch NFTs for a user
@@ -10,10 +10,10 @@ import { Address } from "viem";
  */
 export function useGetNftForUser(address: Address) {
   return useQuery<OwnedNftsResponse>({
-    queryKey: ["nft", address],
+    queryKey: ['nft', address],
     queryFn: async () => {
       const nft = await alchemy.nft.getNftsForOwner(address, {
-        contractAddresses: ["example-contract-address"],
+        contractAddresses: ['example-contract-address'],
       });
       return nft;
     },

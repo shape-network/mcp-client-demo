@@ -1,18 +1,14 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2Icon } from "lucide-react";
+import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2Icon } from 'lucide-react';
 
 type LoadingProps = {
-  variant?: "spinner" | "skeleton";
-  size?: "sm" | "md" | "lg";
+  variant?: 'spinner' | 'skeleton';
+  size?: 'sm' | 'md' | 'lg';
   text?: string;
 };
 
-export function Loading({
-  variant = "spinner",
-  size = "md",
-  text = "Loading...",
-}: LoadingProps) {
-  if (variant === "skeleton") {
+export function Loading({ variant = 'spinner', size = 'md', text = 'Loading...' }: LoadingProps) {
+  if (variant === 'skeleton') {
     return (
       <div className="space-y-3">
         <Skeleton className="h-4 w-full" />
@@ -23,9 +19,9 @@ export function Loading({
   }
 
   const sizeClasses = {
-    sm: "size-4",
-    md: "size-6",
-    lg: "size-8",
+    sm: 'size-4',
+    md: 'size-6',
+    lg: 'size-8',
   };
 
   return (
