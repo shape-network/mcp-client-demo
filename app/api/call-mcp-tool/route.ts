@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Accept: 'application/json',
       },
       body: JSON.stringify(rpcRequest),
     });
@@ -69,10 +70,11 @@ export async function GET() {
       params: {},
     };
 
-    const mcpResponse = await fetch('http://localhost:3002', {
+    const mcpResponse = await fetch('http://localhost:3002/mcp', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Accept: 'application/json',
       },
       body: JSON.stringify(rpcRequest),
     });
