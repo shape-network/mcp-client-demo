@@ -399,7 +399,7 @@ function CollectionAnalyticsForm() {
   const [includeFloorPrice, setIncludeFloorPrice] = useState(true);
   const [includeSalesHistory, setIncludeSalesHistory] = useState(true);
   const [salesHistoryLimit, setSalesHistoryLimit] = useState(20);
-  const [marketplace, setMarketplace] = useState('');
+  const [marketplace, setMarketplace] = useState<string | undefined>(undefined);
 
   const {
     mutate: analyzeCollection,
@@ -417,7 +417,7 @@ function CollectionAnalyticsForm() {
       includeFloorPrice,
       includeSalesHistory,
       salesHistoryLimit,
-      marketplace: marketplace || undefined,
+      marketplace,
     });
   };
 
@@ -470,12 +470,16 @@ function CollectionAnalyticsForm() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="marketplace">Filter by Marketplace</Label>
-                <Select value={marketplace} onValueChange={setMarketplace} disabled={isPending}>
+                <Select
+                  value={marketplace}
+                  onValueChange={(value) => setMarketplace(value === 'all' ? undefined : value)}
+                  disabled={isPending}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="All marketplaces" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All marketplaces</SelectItem>
+                    <SelectItem value="all">All marketplaces</SelectItem>
                     {MARKETPLACES.map((mp) => (
                       <SelectItem key={mp.value} value={mp.value}>
                         {mp.label}
