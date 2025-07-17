@@ -122,3 +122,62 @@ export function useShapeNfts(address: Address | undefined, enabled: boolean = tr
     retry: 2,
   });
 }
+
+export function useMcpShapeCreatorAnalytics() {
+  return useMutation({
+    mutationFn: ({
+      contractAddress,
+      creatorAddress,
+      fromBlock,
+      toBlock,
+      includeTxDetails,
+    }: {
+      contractAddress: string;
+      creatorAddress?: string;
+      fromBlock?: string;
+      toBlock?: string;
+      includeTxDetails?: boolean;
+    }) =>
+      callMcpTool('getShapeCreatorAnalytics', {
+        contractAddress,
+        creatorAddress,
+        fromBlock,
+        toBlock,
+        includeTxDetails,
+      }),
+    onError: (error) => {
+      console.error('Shape Creator Analytics tool failed:', error);
+    },
+  });
+}
+
+export function useMcpCollectionAnalytics() {
+  return useMutation({
+    mutationFn: ({
+      contractAddress,
+      includeFloorPrice,
+      includeSalesHistory,
+      salesHistoryLimit,
+      fromBlock,
+      marketplace,
+    }: {
+      contractAddress: string;
+      includeFloorPrice?: boolean;
+      includeSalesHistory?: boolean;
+      salesHistoryLimit?: number;
+      fromBlock?: string;
+      marketplace?: string;
+    }) =>
+      callMcpTool('getCollectionAnalytics', {
+        contractAddress,
+        includeFloorPrice,
+        includeSalesHistory,
+        salesHistoryLimit,
+        fromBlock,
+        marketplace,
+      }),
+    onError: (error) => {
+      console.error('Collection Analytics tool failed:', error);
+    },
+  });
+}
