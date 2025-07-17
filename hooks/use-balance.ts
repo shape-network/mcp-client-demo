@@ -15,7 +15,7 @@ export function useWalletBalance() {
     chainId: config.chainId,
     query: {
       enabled: isConnected && !!address,
-      refetchInterval: 30000, // Refetch every 30 seconds
+      refetchInterval: 60 * 1000,
     },
   });
 

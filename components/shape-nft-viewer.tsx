@@ -3,92 +3,24 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useShapeNfts } from '@/hooks/use-mcp';
 import { cn } from '@/lib/utils';
 import type { OwnedNft, OwnedNftsResponse } from 'alchemy-sdk';
 import { Loader2, RefreshCw } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
-
-type McpResponse = {
-  success: boolean;
-  result?: {
-    content: Array<{
-      type: string;
-      text: string;
-    }>;
-  };
-  error?: string;
-};
 
 export function ShapeNftViewer() {
   const { address, isConnected } = useAccount();
-  const [isLoading, setIsLoading] = useState(false);
-  const [response, setResponse] = useState<McpResponse | null>(null);
-  const [nftData, setNftData] = useState<OwnedNftsResponse | null>(null);
 
-  const fetchShapeNfts = async () => {
-    if (!address) return;
+  const { data, isLoading, error, refetch } = useShapeNfts(address, isConnected);
 
-    setIsLoading(true);
-    setResponse(null);
-    setNftData(null);
-
-    try {
-      const res = await fetch('/api/call-mcp-tool', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          toolName: 'getShapeNft',
-          parameters: {
-            address: address,
-            withMetadata: true,
-            pageSize: 10,
-          },
-        }),
-      });
-
-      const data = await res.json();
-      setResponse(data);
-
-      if (data.success && data.result?.content?.[0]?.text) {
-        const responseText = data.result.content[0].text;
-
-        // Check if response starts with "Error:" - then it's an error message, not JSON
-        if (responseText.startsWith('Error:')) {
-          setResponse({
-            success: false,
-            error: responseText,
-          });
-        } else {
-          try {
-            const parsedData = JSON.parse(responseText);
-            setNftData(parsedData);
-          } catch (e) {
-            console.error('Failed to parse NFT data:', e);
-            setResponse({
-              success: false,
-              error: `Invalid JSON response: ${responseText.substring(0, 100)}...`,
-            });
-          }
-        }
-      }
-    } catch {
-      setResponse({
-        success: false,
-        error: 'Network error occurred',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isConnected && address) {
-      fetchShapeNfts();
-    }
-  }, [isConnected, address]);
+  const response =
+    data && !error
+      ? { success: true, result: data.result }
+      : error
+        ? { success: false, error: error.message }
+        : null;
+  const nftData = data && 'parsedData' in data ? (data.parsedData as OwnedNftsResponse) : null;
 
   if (!isConnected) {
     return (
@@ -116,7 +48,7 @@ export function ShapeNftViewer() {
               Fetching NFTs for {address?.slice(0, 6)}...{address?.slice(-4)}
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchShapeNfts} disabled={isLoading}>
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (

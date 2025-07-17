@@ -5,96 +5,36 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useMcpGreet, useMcpServerStatus } from '@/hooks/use-mcp';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-
-type McpResponse = {
-  success: boolean;
-  result?: {
-    content: Array<{
-      type: string;
-      text: string;
-    }>;
-  };
-  error?: string;
-};
-
-type McpTool = {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required: string[];
-  };
-  annotations?: {
-    title?: string;
-    readOnlyHint?: boolean;
-    destructiveHint?: boolean;
-    idempotentHint?: boolean;
-  };
-};
+import { useState } from 'react';
 
 export function McpGreetDemo() {
   const [name, setName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [response, setResponse] = useState<McpResponse | null>(null);
-  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'disconnected'>(
-    'unknown'
-  );
-  const [availableTools, setAvailableTools] = useState<McpTool[]>([]);
 
-  const checkServerStatus = async () => {
-    try {
-      const res = await fetch('/api/call-mcp-tool');
-      const data = await res.json();
-      setServerStatus(data.success ? 'connected' : 'disconnected');
-      if (data.success && data.availableTools) {
-        setAvailableTools(data.availableTools);
-      }
-    } catch {
-      setServerStatus('disconnected');
-      setAvailableTools([]);
-    }
-  };
+  const { data: serverStatusData, isLoading: isCheckingStatus } = useMcpServerStatus();
+  const {
+    mutate: greet,
+    data: greetResponse,
+    isPending: isGreeting,
+    reset: resetGreetResponse,
+  } = useMcpGreet();
 
-  useEffect(() => {
-    checkServerStatus();
+  const serverStatus = isCheckingStatus
+    ? 'unknown'
+    : serverStatusData?.success
+      ? 'connected'
+      : 'disconnected';
 
-    const interval = setInterval(checkServerStatus, 120 * 1000);
+  const availableTools = serverStatusData?.availableTools || [];
+  const isLoading = isGreeting;
+  const response = greetResponse;
 
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleGreet = async () => {
+  const handleGreet = () => {
     if (!name.trim()) return;
-
-    setIsLoading(true);
-    setResponse(null);
-
-    try {
-      const res = await fetch('/api/call-mcp-tool', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          toolName: 'greet',
-          parameters: { name: name.trim() },
-        }),
-      });
-
-      const data = await res.json();
-      setResponse(data);
-    } catch {
-      setResponse({
-        success: false,
-        error: 'Network error occurred',
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    resetGreetResponse();
+    greet(name);
   };
 
   return (
