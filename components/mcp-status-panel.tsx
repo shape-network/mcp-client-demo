@@ -4,73 +4,21 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useMcpServerStatus } from '@/hooks/use-mcp';
 import { cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
-
-type ParameterSchema = {
-  type?: string;
-  description?: string;
-  [key: string]: unknown;
-};
-
-type McpTool = {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, ParameterSchema>;
-    required: string[];
-  };
-  annotations?: {
-    title?: string;
-    readOnlyHint?: boolean;
-    destructiveHint?: boolean;
-    idempotentHint?: boolean;
-  };
-};
-
-type McpStatusResponse = {
-  success: boolean;
-  message?: string;
-  availableTools?: McpTool[];
-  error?: string;
-};
 
 export function McpStatusPanel() {
-  const [serverStatus, setServerStatus] = useState<'unknown' | 'connected' | 'disconnected'>(
-    'unknown'
-  );
-  const [availableTools, setAvailableTools] = useState<McpTool[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const { data: serverStatusData, isLoading, refetch, dataUpdatedAt } = useMcpServerStatus();
 
-  const checkServerStatus = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/call-mcp-tool');
-      const data: McpStatusResponse = await res.json();
-      setServerStatus(data.success ? 'connected' : 'disconnected');
-      if (data.success && data.availableTools) {
-        setAvailableTools(data.availableTools);
-      } else {
-        setAvailableTools([]);
-      }
-      setLastChecked(new Date());
-    } catch {
-      setServerStatus('disconnected');
-      setAvailableTools([]);
-      setLastChecked(new Date());
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const serverStatus = isLoading
+    ? 'unknown'
+    : serverStatusData?.success
+      ? 'connected'
+      : 'disconnected';
 
-  useEffect(() => {
-    checkServerStatus();
-    const interval = setInterval(checkServerStatus, 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const availableTools = serverStatusData?.availableTools || [];
+  const lastChecked = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
 
   const getStatusConfig = () => {
     switch (serverStatus) {
@@ -129,7 +77,7 @@ export function McpStatusPanel() {
           <Button
             variant="outline"
             size="sm"
-            onClick={checkServerStatus}
+            onClick={() => refetch()}
             disabled={isLoading}
             className="gap-2"
           >
@@ -202,7 +150,9 @@ export function McpStatusPanel() {
                         Required {tool.inputSchema.required.length > 1 ? 'params' : 'param'}:
                       </span>
                       {tool.inputSchema.required.map((param, index) => {
-                        const paramSchema = tool.inputSchema.properties[param];
+                        const paramSchema = tool.inputSchema.properties[param] as
+                          | { type?: string; description?: string }
+                          | undefined;
                         const paramType = paramSchema?.type;
                         const shouldShowType = paramType && paramType !== 'string';
 
