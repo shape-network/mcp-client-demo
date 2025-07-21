@@ -19,16 +19,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useCollectionAnalytics,
   useShapeCreatorAnalytics,
-  useShapeGasbackStats,
   useTopShapeCreators,
 } from '@/hooks/use-mcp';
 import { cn } from '@/lib/utils';
-import type {
-  CollectionAnalyticsData,
-  CreatorAnalyticsData,
-  GasbackStatsData,
-  TopCreatorsData,
-} from '@/types';
+import type { CollectionAnalyticsData, CreatorAnalyticsData, TopCreatorsData } from '@/types';
 import {
   Activity,
   AlertCircle,
@@ -850,282 +844,6 @@ function TopShapeCreatorsForm() {
   );
 }
 
-function ShapeGasbackStatsForm() {
-  const [includeSampleData, setIncludeSampleData] = useState(true);
-
-  const {
-    data: response,
-    isLoading: isPending,
-    error,
-    refetch,
-  } = useShapeGasbackStats(includeSampleData, false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    refetch();
-  };
-
-  let stats: GasbackStatsData | null = null;
-  if (response?.success && response.result?.content?.[0]?.text) {
-    try {
-      stats = JSON.parse(response.result.content[0].text);
-    } catch (e) {
-      console.error('Failed to parse gasback stats:', e);
-    }
-  } else if (response && 'parsedData' in response && response.parsedData) {
-    stats = response.parsedData;
-  }
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PieChart className="h-5 w-5" />
-            Shape Gasback Ecosystem Stats
-          </CardTitle>
-          <CardDescription>
-            Comprehensive statistics about the entire Shape gasback ecosystem
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="includeSamples"
-                checked={includeSampleData}
-                onCheckedChange={setIncludeSampleData}
-                disabled={isPending}
-              />
-              <Label htmlFor="includeSamples">Include Sample Data (Top Tokens & Contracts)</Label>
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleSubmit} disabled={isPending} className="flex-1">
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Get Ecosystem Stats
-              </Button>
-              <Button onClick={() => refetch()} disabled={isPending} variant="outline">
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Refresh
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {error && (
-        <Alert className="border-red-200 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">{error.message}</AlertDescription>
-        </Alert>
-      )}
-
-      {stats && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <MetricCard
-              title="Total Tokens"
-              value={stats.ecosystem.totalTokens.toLocaleString()}
-              icon={Activity}
-              color="blue"
-            />
-            <MetricCard
-              title="Active Tokens"
-              value={`${stats.ecosystem.activeTokens.toLocaleString()} (${stats.ecosystem.activeTokenPercentage})`}
-              icon={Zap}
-              color="green"
-            />
-            <MetricCard
-              title="Total Owners"
-              value={stats.ecosystem.estimatedTotalOwners.toLocaleString()}
-              icon={Users}
-              color="orange"
-            />
-            <MetricCard
-              title="Total Earned"
-              value={`${parseFloat(stats.earnings.estimatedTotalEarnedETH).toFixed(2)} ETH`}
-              icon={DollarSign}
-              color="purple"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Card className="border-2 border-green-200 bg-green-50">
-              <CardHeader>
-                <CardTitle className="text-green-700">Earnings Distribution</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Median:</span>
-                  <span className="font-mono text-sm">
-                    {parseFloat(stats.distribution.medianEarningsETH).toFixed(6)} ETH
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Top 10%:</span>
-                  <span className="font-mono text-sm">
-                    {parseFloat(stats.distribution.top10PercentileETH).toFixed(6)} ETH
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Top 5%:</span>
-                  <span className="font-mono text-sm">
-                    {parseFloat(stats.distribution.top5PercentileETH).toFixed(6)} ETH
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Average:</span>
-                  <span className="font-mono text-sm">
-                    {parseFloat(stats.distribution.averageEarningsPerTokenETH).toFixed(6)} ETH
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-blue-200 bg-blue-50">
-              <CardHeader>
-                <CardTitle className="text-blue-700">Contract Analytics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Total Contracts:</span>
-                  <span className="font-mono text-sm">
-                    {stats.contracts.estimatedTotalRegisteredContracts.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Avg per Token:</span>
-                  <span className="font-mono text-sm">
-                    {stats.contracts.averageContractsPerToken}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Unique Sampled:</span>
-                  <span className="font-mono text-sm">
-                    {stats.contracts.sampledUniqueContracts.toLocaleString()}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-purple-200 bg-purple-50">
-              <CardHeader>
-                <CardTitle className="text-purple-700">Withdrawal Stats</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Current Balance:</span>
-                  <span className="font-mono text-sm">
-                    {parseFloat(stats.earnings.estimatedCurrentBalanceETH).toFixed(2)} ETH
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Withdrawn:</span>
-                  <span className="font-mono text-sm">
-                    {parseFloat(stats.earnings.estimatedTotalWithdrawnETH).toFixed(2)} ETH
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Withdrawal Rate:</span>
-                  <span className="font-mono text-sm">{stats.earnings.withdrawalRate}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {stats.samples && (
-            <>
-              {stats.samples.topTokensByEarnings &&
-                stats.samples.topTokensByEarnings.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Top Earning Tokens</CardTitle>
-                      <CardDescription>
-                        Highest earning gasback tokens by total earnings
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {stats.samples.topTokensByEarnings.slice(0, 10).map((token, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                              <div>
-                                <p className="font-medium">Token #{token.tokenId}</p>
-                                <p className="text-xs text-gray-500">
-                                  {token.owner.slice(0, 10)}...{token.owner.slice(-8)}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-green-600">
-                                {parseFloat(token.totalEarnedETH).toFixed(6)} ETH
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-              {stats.samples.topContractsByEarnings &&
-                stats.samples.topContractsByEarnings.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Top Earning Contracts</CardTitle>
-                      <CardDescription>
-                        Contracts generating the most gasback rewards
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {stats.samples.topContractsByEarnings.slice(0, 10).map((contract, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                              <div>
-                                <p className="font-mono text-sm">
-                                  {contract.contractAddress.slice(0, 10)}...
-                                  {contract.contractAddress.slice(-8)}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-green-600">
-                                {parseFloat(contract.totalEarnedETH).toFixed(6)} ETH
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-            </>
-          )}
-
-          <details className="mt-4">
-            <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
-              View raw JSON response
-            </summary>
-            <pre className="mt-2 overflow-auto rounded bg-gray-50 p-2 text-xs">
-              {JSON.stringify(stats, null, 2)}
-            </pre>
-          </details>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function AnalyticsDashboard() {
   return (
     <Card className="w-full">
@@ -1140,7 +858,7 @@ export function AnalyticsDashboard() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="top-creators" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="top-creators" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Top Creators
@@ -1152,10 +870,6 @@ export function AnalyticsDashboard() {
             <TabsTrigger value="collection" className="flex items-center gap-2">
               <PieChart className="h-4 w-4" />
               Collection Analytics
-            </TabsTrigger>
-            <TabsTrigger value="ecosystem" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Ecosystem Stats
             </TabsTrigger>
           </TabsList>
 
@@ -1169,10 +883,6 @@ export function AnalyticsDashboard() {
 
           <TabsContent value="top-creators" className="mt-6">
             <TopShapeCreatorsForm />
-          </TabsContent>
-
-          <TabsContent value="ecosystem" className="mt-6">
-            <ShapeGasbackStatsForm />
           </TabsContent>
         </Tabs>
       </CardContent>
