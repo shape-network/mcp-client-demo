@@ -16,14 +16,13 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useMcpCollectionAnalytics, useMcpShapeCreatorAnalytics } from '@/hooks/use-mcp';
+import { useCollectionAnalytics, useShapeCreatorAnalytics } from '@/hooks/use-mcp';
 import { cn } from '@/lib/utils';
 import type { GetFloorPriceResponse } from 'alchemy-sdk';
 import {
   Activity,
   AlertCircle,
   BarChart3,
-  CheckCircle2,
   DollarSign,
   LineChart,
   Loader2,
@@ -59,26 +58,33 @@ const MARKETPLACES = [
 ];
 
 type CreatorAnalyticsData = {
-  contractAddress: string;
-  creatorAddress?: string;
-  gasbackInfo: {
-    isRegistered: boolean;
-    totalEarnedETH?: string;
-    currentBalanceETH?: string;
+  creatorAddress: string;
+  hasTokens?: boolean;
+  summary?: {
+    totalTokens: number;
+    totalRegisteredContracts: number;
+    uniqueContracts: number;
+    totalGasbackEarnedETH: string;
+    totalCurrentBalanceETH: string;
+    totalWithdrawnETH: string;
+    averageEarningsPerToken: string;
+    averageEarningsPerContract: string;
   };
-  creatorMetrics: {
-    totalTransactions: number;
-    uniqueUsers: number;
-    totalGasUsed: number;
-    averageGasPerTx: number;
-  };
-  recentActivity: Array<{
-    hash: string;
-    from: string;
-    to: string;
-    value: number;
-    blockNumber: string;
+  tokens?: Array<{
+    tokenId: string;
+    totalEarnedETH: string;
+    currentBalanceETH: string;
+    withdrawnAmountETH: string;
+    registeredContractsCount: number;
+    registeredContracts: string[];
   }>;
+  contractEarnings?: Array<{
+    contractAddress: string;
+    tokenId: string;
+    totalEarnedETH: string;
+    balanceUpdatedBlock: string;
+  }>;
+  timestamp: string;
 };
 
 type CollectionAnalyticsData = {
@@ -154,42 +160,52 @@ function MetricCard({
 }
 
 function CreatorAnalyticsForm() {
-  const [contractAddress, setContractAddress] = useState('');
   const [creatorAddress, setCreatorAddress] = useState('');
-  const [fromBlock, setFromBlock] = useState('');
-  const [includeTxDetails, setIncludeTxDetails] = useState(true);
+  const [shouldAnalyze, setShouldAnalyze] = useState(false);
 
   const {
-    mutate: analyzeCreator,
     data: response,
-    isPending,
+    isLoading: isPending,
     error,
-  } = useMcpShapeCreatorAnalytics();
+    refetch,
+  } = useShapeCreatorAnalytics(
+    shouldAnalyze && creatorAddress.trim() ? creatorAddress.trim() : undefined,
+    shouldAnalyze && !!creatorAddress.trim()
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contractAddress.trim()) return;
-
-    analyzeCreator({
-      contractAddress: contractAddress.trim(),
-      creatorAddress: creatorAddress.trim() || undefined,
-      fromBlock: fromBlock.trim() || undefined,
-      includeTxDetails,
-    });
+    if (!creatorAddress.trim()) return;
+    setShouldAnalyze(true);
   };
 
   const loadPreset = (preset: (typeof PRESET_CONTRACTS)[0]) => {
-    setContractAddress(preset.address);
     setCreatorAddress(preset.creator);
+    setShouldAnalyze(false);
   };
 
   let analytics: CreatorAnalyticsData | null = null;
+  let parseError: string | null = null;
+
   if (response?.success && response.result?.content?.[0]?.text) {
     try {
-      analytics = JSON.parse(response.result.content[0].text);
+      const parsed = JSON.parse(response.result.content[0].text);
+
+      if (parsed.error) {
+        parseError = parsed.message || 'Unknown error occurred';
+      } else if (parsed.hasTokens === false) {
+        analytics = parsed;
+      } else if (parsed.summary) {
+        analytics = parsed;
+      } else {
+        parseError = 'Invalid response format';
+      }
     } catch (e) {
       console.error('Failed to parse creator analytics:', e);
+      parseError = 'Failed to parse server response';
     }
+  } else if (response && 'parsedData' in response && response.parsedData) {
+    analytics = response.parsedData;
   }
 
   return (
@@ -201,54 +217,23 @@ function CreatorAnalyticsForm() {
             Shape Creator Analytics
           </CardTitle>
           <CardDescription>
-            Analyze gasback earnings, contract interactions, and creator performance metrics
+            Analyze gasback earnings, token count, and registered contracts for a Shape creator
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="contract">Contract Address *</Label>
-                <Input
-                  id="contract"
-                  value={contractAddress}
-                  onChange={(e) => setContractAddress(e.target.value)}
-                  placeholder="0x..."
-                  disabled={isPending}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="creator">Creator Address</Label>
-                <Input
-                  id="creator"
-                  value={creatorAddress}
-                  onChange={(e) => setCreatorAddress(e.target.value)}
-                  placeholder="0x..."
-                  disabled={isPending}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="fromBlock">From Block</Label>
-                <Input
-                  id="fromBlock"
-                  value={fromBlock}
-                  onChange={(e) => setFromBlock(e.target.value)}
-                  placeholder="Auto (last 1000 blocks)"
-                  disabled={isPending}
-                />
-              </div>
-              <div className="flex items-center space-x-2 pt-6">
-                <Switch
-                  id="includeTx"
-                  checked={includeTxDetails}
-                  onCheckedChange={setIncludeTxDetails}
-                  disabled={isPending}
-                />
-                <Label htmlFor="includeTx">Include Transaction Details</Label>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="creator">Creator Address *</Label>
+              <Input
+                id="creator"
+                value={creatorAddress}
+                onChange={(e) => {
+                  setCreatorAddress(e.target.value);
+                  setShouldAnalyze(false);
+                }}
+                placeholder="0x..."
+                disabled={isPending}
+              />
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -266,128 +251,206 @@ function CreatorAnalyticsForm() {
               ))}
             </div>
 
-            <Button
-              onClick={handleSubmit}
-              disabled={isPending || !contractAddress.trim()}
-              className="w-full"
-            >
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Analyze Creator
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSubmit}
+                disabled={isPending || !creatorAddress.trim()}
+                className="flex-1"
+              >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Analyze Creator
+              </Button>
+              {shouldAnalyze && (
+                <Button onClick={() => refetch()} disabled={isPending} variant="outline">
+                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Refresh
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {error && (
+      {(error || parseError) && (
         <Alert className="border-red-200 bg-red-50">
           <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">{error.message}</AlertDescription>
+          <AlertDescription className="text-red-800">
+            {parseError || error?.message}
+          </AlertDescription>
         </Alert>
       )}
 
-      {analytics && (
+      {analytics && analytics.hasTokens === false && (
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertCircle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            Creator has no gasback tokens on Shape
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {analytics && analytics.summary && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <MetricCard
-              title="Total Transactions"
-              value={analytics.creatorMetrics.totalTransactions.toLocaleString()}
+              title="Total Tokens"
+              value={analytics.summary.totalTokens.toLocaleString()}
               icon={Activity}
               color="blue"
             />
             <MetricCard
-              title="Unique Users"
-              value={analytics.creatorMetrics.uniqueUsers.toLocaleString()}
+              title="Registered Contracts"
+              value={analytics.summary.totalRegisteredContracts.toLocaleString()}
               icon={Users}
               color="green"
             />
             <MetricCard
-              title="Total Gas Used"
-              value={analytics.creatorMetrics.totalGasUsed.toLocaleString()}
-              subtitle="wei"
-              icon={Zap}
+              title="Total Earned"
+              value={`${parseFloat(analytics.summary.totalGasbackEarnedETH).toFixed(6)} ETH`}
+              icon={DollarSign}
               color="orange"
             />
             <MetricCard
-              title="Avg Gas/Tx"
-              value={analytics.creatorMetrics.averageGasPerTx.toLocaleString()}
-              subtitle="wei"
+              title="Current Balance"
+              value={`${parseFloat(analytics.summary.totalCurrentBalanceETH).toFixed(6)} ETH`}
               icon={TrendingUp}
               color="purple"
             />
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Gasback Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {analytics.gasbackInfo.isRegistered ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <span className="font-medium">Contract is registered for gasback</span>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Card className="border-2 border-red-200 bg-red-50 text-red-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="mb-1 text-sm font-medium text-red-600">Total Withdrawn</p>
+                    <p className="text-2xl font-bold">
+                      {parseFloat(analytics.summary.totalWithdrawnETH).toFixed(6)} ETH
+                    </p>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                      <p className="text-sm font-medium text-green-600">Total Earned</p>
-                      <p className="text-2xl font-bold text-green-800">
-                        {analytics.gasbackInfo.totalEarnedETH} ETH
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                      <p className="text-sm font-medium text-blue-600">Current Balance</p>
-                      <p className="text-2xl font-bold text-blue-800">
-                        {analytics.gasbackInfo.currentBalanceETH} ETH
-                      </p>
-                    </div>
+                  <Zap className="h-8 w-8" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-2 border-indigo-200 bg-indigo-50 text-indigo-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="mb-1 text-sm font-medium text-indigo-600">Avg per Token</p>
+                    <p className="text-2xl font-bold">
+                      {parseFloat(analytics.summary.averageEarningsPerToken).toFixed(6)} ETH
+                    </p>
                   </div>
+                  <PieChart className="h-8 w-8" />
                 </div>
-              ) : (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <AlertCircle className="h-5 w-5" />
-                  <span>Contract is not registered for gasback on Shape</span>
+              </CardContent>
+            </Card>
+            <Card className="border-2 border-pink-200 bg-pink-50 text-pink-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="mb-1 text-sm font-medium text-pink-600">Avg per Contract</p>
+                    <p className="text-2xl font-bold">
+                      {parseFloat(analytics.summary.averageEarningsPerContract).toFixed(6)} ETH
+                    </p>
+                  </div>
+                  <BarChart3 className="h-8 w-8" />
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>
-                Latest {analytics.recentActivity.length} transactions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {analytics.recentActivity.slice(0, 5).map((tx, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                      <div>
-                        <p className="font-mono text-sm">
-                          {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
+          {analytics.tokens && analytics.tokens.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Gasback Tokens</CardTitle>
+                <CardDescription>
+                  Token-level gasback analytics ({analytics.tokens.length} tokens)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {analytics.tokens.slice(0, 10).map((token, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600">
+                          #{token.tokenId}
+                        </div>
+                        <div>
+                          <p className="font-medium">Token #{token.tokenId}</p>
+                          <p className="text-sm text-gray-500">
+                            {token.registeredContractsCount} contracts
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-green-600">
+                          {parseFloat(token.totalEarnedETH).toFixed(6)} ETH
                         </p>
-                        <p className="text-xs text-gray-500">Block {tx.blockNumber}</p>
+                        <p className="text-sm text-gray-500">
+                          Balance: {parseFloat(token.currentBalanceETH).toFixed(6)} ETH
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">{tx.value} ETH</p>
-                      <p className="text-xs text-gray-500">
-                        {tx.from.slice(0, 6)}...{tx.from.slice(-4)}
-                      </p>
+                  ))}
+                  {analytics.tokens.length > 10 && (
+                    <p className="text-center text-sm text-gray-500">
+                      ... and {analytics.tokens.length - 10} more tokens
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {analytics.contractEarnings && analytics.contractEarnings.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Contract Earnings</CardTitle>
+                <CardDescription>
+                  Earnings breakdown by registered contracts ({analytics.contractEarnings.length}{' '}
+                  contracts)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {analytics.contractEarnings.slice(0, 10).map((contract, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                        <div>
+                          <p className="font-mono text-sm">
+                            {contract.contractAddress.slice(0, 10)}...
+                            {contract.contractAddress.slice(-8)}
+                          </p>
+                          <p className="text-xs text-gray-500">Token #{contract.tokenId}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-green-600">
+                          {parseFloat(contract.totalEarnedETH).toFixed(6)} ETH
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Block {contract.balanceUpdatedBlock}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                  {analytics.contractEarnings.length > 10 && (
+                    <p className="text-center text-sm text-gray-500">
+                      ... and {analytics.contractEarnings.length - 10} more contracts
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>
@@ -400,25 +463,28 @@ function CollectionAnalyticsForm() {
   const [includeSalesHistory, setIncludeSalesHistory] = useState(true);
   const [salesHistoryLimit, setSalesHistoryLimit] = useState(20);
   const [marketplace, setMarketplace] = useState<string | undefined>(undefined);
+  const [shouldAnalyze, setShouldAnalyze] = useState(false);
 
   const {
-    mutate: analyzeCollection,
     data: response,
-    isPending,
+    isLoading: isPending,
     error,
-  } = useMcpCollectionAnalytics();
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!contractAddress.trim()) return;
-
-    analyzeCollection({
-      contractAddress: contractAddress.trim(),
+    refetch,
+  } = useCollectionAnalytics(
+    shouldAnalyze && contractAddress.trim() ? contractAddress.trim() : undefined,
+    {
       includeFloorPrice,
       includeSalesHistory,
       salesHistoryLimit,
       marketplace,
-    });
+    },
+    shouldAnalyze && !!contractAddress.trim()
+  );
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contractAddress.trim()) return;
+    setShouldAnalyze(true);
   };
 
   let analytics: CollectionAnalyticsData | null = null;
@@ -428,6 +494,8 @@ function CollectionAnalyticsForm() {
     } catch (e) {
       console.error('Failed to parse collection analytics:', e);
     }
+  } else if (response && 'parsedData' in response && response.parsedData) {
+    analytics = response.parsedData;
   }
 
   return (
@@ -449,7 +517,10 @@ function CollectionAnalyticsForm() {
               <Input
                 id="collectionContract"
                 value={contractAddress}
-                onChange={(e) => setContractAddress(e.target.value)}
+                onChange={(e) => {
+                  setContractAddress(e.target.value);
+                  setShouldAnalyze(false);
+                }}
                 placeholder="0x..."
                 disabled={isPending}
               />
@@ -462,7 +533,10 @@ function CollectionAnalyticsForm() {
                   id="salesLimit"
                   type="number"
                   value={salesHistoryLimit}
-                  onChange={(e) => setSalesHistoryLimit(Number(e.target.value))}
+                  onChange={(e) => {
+                    setSalesHistoryLimit(Number(e.target.value));
+                    setShouldAnalyze(false);
+                  }}
                   min={1}
                   max={100}
                   disabled={isPending}
@@ -472,7 +546,10 @@ function CollectionAnalyticsForm() {
                 <Label htmlFor="marketplace">Filter by Marketplace</Label>
                 <Select
                   value={marketplace}
-                  onValueChange={(value) => setMarketplace(value === 'all' ? undefined : value)}
+                  onValueChange={(value) => {
+                    setMarketplace(value === 'all' ? undefined : value);
+                    setShouldAnalyze(false);
+                  }}
                   disabled={isPending}
                 >
                   <SelectTrigger>
@@ -495,7 +572,10 @@ function CollectionAnalyticsForm() {
                 <Switch
                   id="includeFloor"
                   checked={includeFloorPrice}
-                  onCheckedChange={setIncludeFloorPrice}
+                  onCheckedChange={(checked) => {
+                    setIncludeFloorPrice(checked);
+                    setShouldAnalyze(false);
+                  }}
                   disabled={isPending}
                 />
                 <Label htmlFor="includeFloor">Include Floor Price Data</Label>
@@ -504,21 +584,32 @@ function CollectionAnalyticsForm() {
                 <Switch
                   id="includeSales"
                   checked={includeSalesHistory}
-                  onCheckedChange={setIncludeSalesHistory}
+                  onCheckedChange={(checked) => {
+                    setIncludeSalesHistory(checked);
+                    setShouldAnalyze(false);
+                  }}
                   disabled={isPending}
                 />
                 <Label htmlFor="includeSales">Include Sales History</Label>
               </div>
             </div>
 
-            <Button
-              onClick={handleSubmit}
-              disabled={isPending || !contractAddress.trim()}
-              className="w-full"
-            >
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Analyze Collection
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSubmit}
+                disabled={isPending || !contractAddress.trim()}
+                className="flex-1"
+              >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Analyze Collection
+              </Button>
+              {shouldAnalyze && (
+                <Button onClick={() => refetch()} disabled={isPending} variant="outline">
+                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Refresh
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

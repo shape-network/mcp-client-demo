@@ -144,13 +144,13 @@ export function McpStatusPanel() {
                     )}
                   </div>
                   <p className="mb-2 text-sm text-gray-600">{tool.description}</p>
-                  {tool.inputSchema.required.length > 0 && (
+                  {tool.inputSchema?.required && tool.inputSchema.required.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1 text-xs">
                       <span className="font-medium text-gray-700">
                         Required {tool.inputSchema.required.length > 1 ? 'params' : 'param'}:
                       </span>
                       {tool.inputSchema.required.map((param, index) => {
-                        const paramSchema = tool.inputSchema.properties[param] as
+                        const paramSchema = tool.inputSchema?.properties?.[param] as
                           | { type?: string; description?: string }
                           | undefined;
                         const paramType = paramSchema?.type;

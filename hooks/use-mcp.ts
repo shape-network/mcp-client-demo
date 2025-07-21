@@ -1,7 +1,7 @@
 'use client';
 
 import { McpResponse, McpStatusResponse } from '@/types';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Address } from 'viem';
 
 async function checkMcpServerStatus(): Promise<McpStatusResponse> {
@@ -40,47 +40,6 @@ export function useMcpServerStatus() {
     queryFn: checkMcpServerStatus,
     refetchInterval: 60 * 5 * 1000,
     staleTime: 30 * 1000,
-  });
-}
-
-export function useMcpTool() {
-  return useMutation({
-    mutationFn: ({
-      toolName,
-      parameters,
-    }: {
-      toolName: string;
-      parameters?: Record<string, unknown>;
-    }) => callMcpTool(toolName, parameters),
-    onError: (error) => {
-      console.error('MCP tool call failed:', error);
-    },
-  });
-}
-
-export function useMcpGreet() {
-  return useMutation({
-    mutationFn: (name: string) => callMcpTool('greet', { name: name.trim() }),
-    onError: (error) => {
-      console.error('Greet tool failed:', error);
-    },
-  });
-}
-
-export function useMcpShapeNft() {
-  return useMutation({
-    mutationFn: ({
-      address,
-      withMetadata = true,
-      pageSize = 10,
-    }: {
-      address: Address;
-      withMetadata?: boolean;
-      pageSize?: number;
-    }) => callMcpTool('getShapeNft', { address, withMetadata, pageSize }),
-    onError: (error) => {
-      console.error('Shape NFT tool failed:', error);
-    },
   });
 }
 
@@ -123,61 +82,92 @@ export function useShapeNfts(address: Address | undefined, enabled: boolean = tr
   });
 }
 
-export function useMcpShapeCreatorAnalytics() {
-  return useMutation({
-    mutationFn: ({
-      contractAddress,
-      creatorAddress,
-      fromBlock,
-      toBlock,
-      includeTxDetails,
-    }: {
-      contractAddress: string;
-      creatorAddress?: string;
-      fromBlock?: string;
-      toBlock?: string;
-      includeTxDetails?: boolean;
-    }) =>
-      callMcpTool('getShapeCreatorAnalytics', {
-        contractAddress,
-        creatorAddress,
-        fromBlock,
-        toBlock,
-        includeTxDetails,
-      }),
-    onError: (error) => {
-      console.error('Shape Creator Analytics tool failed:', error);
+export function useShapeCreatorAnalytics(
+  creatorAddress: string | undefined,
+  enabled: boolean = true
+) {
+  return useQuery({
+    queryKey: ['mcp', 'shape-creator-analytics', creatorAddress],
+    queryFn: async () => {
+      const response = await callMcpTool('getShapeCreatorAnalytics', {
+        creatorAddress: creatorAddress!,
+      });
+
+      if (response.success && response.result?.content?.[0]?.text) {
+        const responseText = response.result.content[0].text;
+
+        try {
+          const parsedData = JSON.parse(responseText);
+          if (parsedData.error) {
+            throw new Error(parsedData.message || 'Unknown error occurred');
+          }
+          return { ...response, parsedData };
+        } catch (e) {
+          console.error('Failed to parse creator analytics:', e);
+          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+        }
+      }
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch creator analytics');
+      }
+
+      return response;
     },
+    enabled: enabled && !!creatorAddress,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 2,
   });
 }
 
-export function useMcpCollectionAnalytics() {
-  return useMutation({
-    mutationFn: ({
-      contractAddress,
-      includeFloorPrice,
-      includeSalesHistory,
-      salesHistoryLimit,
-      fromBlock,
-      marketplace,
-    }: {
-      contractAddress: string;
-      includeFloorPrice?: boolean;
-      includeSalesHistory?: boolean;
-      salesHistoryLimit?: number;
-      fromBlock?: string;
-      marketplace?: string;
-    }) =>
-      callMcpTool('getCollectionAnalytics', {
-        contractAddress,
-        includeFloorPrice,
-        includeSalesHistory,
-        salesHistoryLimit,
-        fromBlock,
-        marketplace,
-      }),
-    onError: (error) => {
-      console.error('Collection Analytics tool failed:', error);
+export function useCollectionAnalytics(
+  contractAddress: string,
+  options: {
+    includeFloorPrice?: boolean;
+    includeSalesHistory?: boolean;
+    salesHistoryLimit?: number;
+    fromBlock?: string;
+    marketplace?: string;
+  } = {},
+  enabled: boolean = true
+) {
+  return useQuery({
+    queryKey: ['mcp', 'collection-analytics', contractAddress, options],
+    queryFn: async () => {
+      const response = await callMcpTool('getCollectionAnalytics', {
+        contractAddress: contractAddress,
+        includeFloorPrice: options.includeFloorPrice ?? true,
+        includeSalesHistory: options.includeSalesHistory ?? true,
+        salesHistoryLimit: options.salesHistoryLimit ?? 20,
+        fromBlock: options.fromBlock,
+        marketplace: options.marketplace,
+      });
+
+      if (response.success && response.result?.content?.[0]?.text) {
+        const responseText = response.result.content[0].text;
+
+        try {
+          const parsedData = JSON.parse(responseText);
+          if (parsedData.error) {
+            throw new Error(parsedData.message || 'Unknown error occurred');
+          }
+          return { ...response, parsedData };
+        } catch (e) {
+          console.error('Failed to parse collection analytics:', e);
+          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+        }
+      }
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch collection analytics');
+      }
+
+      return response;
     },
+    enabled: enabled && !!contractAddress,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 2,
   });
 }
