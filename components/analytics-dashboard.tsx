@@ -16,9 +16,19 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useCollectionAnalytics, useShapeCreatorAnalytics } from '@/hooks/use-mcp';
+import {
+  useCollectionAnalytics,
+  useShapeCreatorAnalytics,
+  useShapeGasbackStats,
+  useTopShapeCreators,
+} from '@/hooks/use-mcp';
 import { cn } from '@/lib/utils';
-import type { GetFloorPriceResponse } from 'alchemy-sdk';
+import type {
+  CollectionAnalyticsData,
+  CreatorAnalyticsData,
+  GasbackStatsData,
+  TopCreatorsData,
+} from '@/types';
 import {
   Activity,
   AlertCircle,
@@ -33,21 +43,6 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
-const PRESET_CONTRACTS = [
-  {
-    name: 'Sample NFT Collection',
-    address: '0x1234567890123456789012345678901234567890',
-    creator: '0x0987654321098765432109876543210987654321',
-    type: 'NFT Collection',
-  },
-  {
-    name: 'DeFi Protocol',
-    address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-    creator: '0xfedcbafedcbafedcbafedcbafedcbafedcbafedcba',
-    type: 'DeFi',
-  },
-];
-
 const MARKETPLACES = [
   { value: 'seaport', label: 'OpenSea (Seaport)' },
   { value: 'blur', label: 'Blur' },
@@ -56,59 +51,6 @@ const MARKETPLACES = [
   { value: 'wyvern', label: 'OpenSea (Wyvern)' },
   { value: 'cryptopunks', label: 'CryptoPunks' },
 ];
-
-type CreatorAnalyticsData = {
-  creatorAddress: string;
-  hasTokens?: boolean;
-  summary?: {
-    totalTokens: number;
-    totalRegisteredContracts: number;
-    uniqueContracts: number;
-    totalGasbackEarnedETH: string;
-    totalCurrentBalanceETH: string;
-    totalWithdrawnETH: string;
-    averageEarningsPerToken: string;
-    averageEarningsPerContract: string;
-  };
-  tokens?: Array<{
-    tokenId: string;
-    totalEarnedETH: string;
-    currentBalanceETH: string;
-    withdrawnAmountETH: string;
-    registeredContractsCount: number;
-    registeredContracts: string[];
-  }>;
-  contractEarnings?: Array<{
-    contractAddress: string;
-    tokenId: string;
-    totalEarnedETH: string;
-    balanceUpdatedBlock: string;
-  }>;
-  timestamp: string;
-};
-
-type CollectionAnalyticsData = {
-  contractAddress: string;
-  floorPrices?: GetFloorPriceResponse;
-  salesAnalytics?: {
-    totalSales: number;
-    totalVolumeETH: string;
-    averagePriceETH: string;
-    marketplaceBreakdown: Record<string, number>;
-  };
-  collectionInfo?: {
-    name: string;
-    symbol: string;
-    totalSupply: string;
-  };
-  recentSales?: Array<{
-    marketplace: string;
-    tokenId: string;
-    priceETH: string;
-    buyer: string;
-    seller: string;
-  }>;
-};
 
 function MetricCard({
   title,
@@ -161,7 +103,6 @@ function MetricCard({
 
 function CreatorAnalyticsForm() {
   const [creatorAddress, setCreatorAddress] = useState('');
-  const [shouldAnalyze, setShouldAnalyze] = useState(false);
 
   const {
     data: response,
@@ -169,19 +110,14 @@ function CreatorAnalyticsForm() {
     error,
     refetch,
   } = useShapeCreatorAnalytics(
-    shouldAnalyze && creatorAddress.trim() ? creatorAddress.trim() : undefined,
-    shouldAnalyze && !!creatorAddress.trim()
+    creatorAddress.trim() || undefined,
+    false // Start disabled, use manual refetch
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!creatorAddress.trim()) return;
-    setShouldAnalyze(true);
-  };
-
-  const loadPreset = (preset: (typeof PRESET_CONTRACTS)[0]) => {
-    setCreatorAddress(preset.creator);
-    setShouldAnalyze(false);
+    refetch();
   };
 
   let analytics: CreatorAnalyticsData | null = null;
@@ -227,28 +163,10 @@ function CreatorAnalyticsForm() {
               <Input
                 id="creator"
                 value={creatorAddress}
-                onChange={(e) => {
-                  setCreatorAddress(e.target.value);
-                  setShouldAnalyze(false);
-                }}
+                onChange={(e) => setCreatorAddress(e.target.value)}
                 placeholder="0x..."
                 disabled={isPending}
               />
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <p className="mb-2 w-full text-sm text-gray-600">Quick presets:</p>
-              {PRESET_CONTRACTS.map((preset) => (
-                <Button
-                  key={preset.address}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => loadPreset(preset)}
-                  disabled={isPending}
-                >
-                  {preset.name}
-                </Button>
-              ))}
             </div>
 
             <div className="flex gap-2">
@@ -260,12 +178,14 @@ function CreatorAnalyticsForm() {
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Analyze Creator
               </Button>
-              {shouldAnalyze && (
-                <Button onClick={() => refetch()} disabled={isPending} variant="outline">
-                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Refresh
-                </Button>
-              )}
+              <Button
+                onClick={() => refetch()}
+                disabled={isPending || !creatorAddress.trim()}
+                variant="outline"
+              >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Refresh
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -463,7 +383,6 @@ function CollectionAnalyticsForm() {
   const [includeSalesHistory, setIncludeSalesHistory] = useState(true);
   const [salesHistoryLimit, setSalesHistoryLimit] = useState(20);
   const [marketplace, setMarketplace] = useState<string | undefined>(undefined);
-  const [shouldAnalyze, setShouldAnalyze] = useState(false);
 
   const {
     data: response,
@@ -471,20 +390,20 @@ function CollectionAnalyticsForm() {
     error,
     refetch,
   } = useCollectionAnalytics(
-    shouldAnalyze && contractAddress.trim() ? contractAddress.trim() : undefined,
+    contractAddress.trim() || undefined,
     {
       includeFloorPrice,
       includeSalesHistory,
       salesHistoryLimit,
       marketplace,
     },
-    shouldAnalyze && !!contractAddress.trim()
+    false // Start disabled, use manual refetch
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!contractAddress.trim()) return;
-    setShouldAnalyze(true);
+    refetch();
   };
 
   let analytics: CollectionAnalyticsData | null = null;
@@ -519,7 +438,6 @@ function CollectionAnalyticsForm() {
                 value={contractAddress}
                 onChange={(e) => {
                   setContractAddress(e.target.value);
-                  setShouldAnalyze(false);
                 }}
                 placeholder="0x..."
                 disabled={isPending}
@@ -535,7 +453,6 @@ function CollectionAnalyticsForm() {
                   value={salesHistoryLimit}
                   onChange={(e) => {
                     setSalesHistoryLimit(Number(e.target.value));
-                    setShouldAnalyze(false);
                   }}
                   min={1}
                   max={100}
@@ -548,7 +465,6 @@ function CollectionAnalyticsForm() {
                   value={marketplace}
                   onValueChange={(value) => {
                     setMarketplace(value === 'all' ? undefined : value);
-                    setShouldAnalyze(false);
                   }}
                   disabled={isPending}
                 >
@@ -574,7 +490,6 @@ function CollectionAnalyticsForm() {
                   checked={includeFloorPrice}
                   onCheckedChange={(checked) => {
                     setIncludeFloorPrice(checked);
-                    setShouldAnalyze(false);
                   }}
                   disabled={isPending}
                 />
@@ -586,7 +501,6 @@ function CollectionAnalyticsForm() {
                   checked={includeSalesHistory}
                   onCheckedChange={(checked) => {
                     setIncludeSalesHistory(checked);
-                    setShouldAnalyze(false);
                   }}
                   disabled={isPending}
                 />
@@ -603,12 +517,14 @@ function CollectionAnalyticsForm() {
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Analyze Collection
               </Button>
-              {shouldAnalyze && (
-                <Button onClick={() => refetch()} disabled={isPending} variant="outline">
-                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Refresh
-                </Button>
-              )}
+              <Button
+                onClick={() => refetch()}
+                disabled={isPending || !contractAddress.trim()}
+                variant="outline"
+              >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Refresh
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -742,6 +658,468 @@ function CollectionAnalyticsForm() {
               </CardContent>
             </Card>
           )}
+
+          <details className="mt-4">
+            <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+              View raw JSON response
+            </summary>
+            <pre className="mt-2 overflow-auto rounded bg-gray-50 p-2 text-xs">
+              {JSON.stringify(analytics, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TopShapeCreatorsForm() {
+  const [limit, setLimit] = useState(50);
+  const [includeContractDetails, setIncludeContractDetails] = useState(false);
+
+  const {
+    data: response,
+    isLoading: isPending,
+    error,
+    refetch,
+  } = useTopShapeCreators(limit, includeContractDetails, false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    refetch();
+  };
+
+  let topCreators: TopCreatorsData | null = null;
+  if (response?.success && response.result?.content?.[0]?.text) {
+    try {
+      topCreators = JSON.parse(response.result.content[0].text);
+    } catch (e) {
+      console.error('Failed to parse top creators:', e);
+    }
+  } else if (response && 'parsedData' in response && response.parsedData) {
+    topCreators = response.parsedData;
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Top Shape Creators
+          </CardTitle>
+          <CardDescription>
+            Discover the top creators on Shape by gasback earnings and activity
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="limit">Number of Creators</Label>
+                <Input
+                  id="limit"
+                  type="number"
+                  value={limit}
+                  onChange={(e) => setLimit(Number(e.target.value))}
+                  min={1}
+                  max={100}
+                  disabled={isPending}
+                />
+              </div>
+              <div className="flex items-center space-x-2 pt-6">
+                <Switch
+                  id="includeDetails"
+                  checked={includeContractDetails}
+                  onCheckedChange={setIncludeContractDetails}
+                  disabled={isPending}
+                />
+                <Label htmlFor="includeDetails">Include Contract Details</Label>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleSubmit} disabled={isPending} className="flex-1">
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Get Top Creators
+              </Button>
+              <Button onClick={() => refetch()} disabled={isPending} variant="outline">
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {error && (
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">{error.message}</AlertDescription>
+        </Alert>
+      )}
+
+      {topCreators && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              title="Total Creators"
+              value={topCreators.summary.totalCreators.toLocaleString()}
+              icon={Users}
+              color="blue"
+            />
+            <MetricCard
+              title="Total Earnings"
+              value={`${parseFloat(topCreators.summary.totalEarningsETH).toFixed(2)} ETH`}
+              icon={DollarSign}
+              color="green"
+            />
+            <MetricCard
+              title="Tokens Scanned"
+              value={topCreators.summary.totalTokensScanned.toLocaleString()}
+              icon={Activity}
+              color="orange"
+            />
+            <MetricCard
+              title="Avg per Creator"
+              value={`${parseFloat(topCreators.summary.averageEarningsPerCreator).toFixed(4)} ETH`}
+              icon={TrendingUp}
+              color="purple"
+            />
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Creators by Gasback Earnings</CardTitle>
+              <CardDescription>
+                Showing top {topCreators.topCreators.length} creators ranked by total gasback
+                earnings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {topCreators.topCreators.slice(0, 20).map((creator, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600">
+                        #{idx + 1}
+                      </div>
+                      <div>
+                        <p className="font-mono text-sm">
+                          {creator.address.slice(0, 10)}...{creator.address.slice(-8)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {creator.totalTokens} tokens • {creator.totalRegisteredContracts}{' '}
+                          contracts
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-green-600">
+                        {parseFloat(creator.totalEarnedETH).toFixed(4)} ETH
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Balance: {parseFloat(creator.currentBalanceETH).toFixed(4)} ETH
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                {topCreators.topCreators.length > 20 && (
+                  <p className="text-center text-sm text-gray-500">
+                    ... and {topCreators.topCreators.length - 20} more creators
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <details className="mt-4">
+            <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+              View raw JSON response
+            </summary>
+            <pre className="mt-2 overflow-auto rounded bg-gray-50 p-2 text-xs">
+              {JSON.stringify(topCreators, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShapeGasbackStatsForm() {
+  const [includeSampleData, setIncludeSampleData] = useState(true);
+
+  const {
+    data: response,
+    isLoading: isPending,
+    error,
+    refetch,
+  } = useShapeGasbackStats(includeSampleData, false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    refetch();
+  };
+
+  let stats: GasbackStatsData | null = null;
+  if (response?.success && response.result?.content?.[0]?.text) {
+    try {
+      stats = JSON.parse(response.result.content[0].text);
+    } catch (e) {
+      console.error('Failed to parse gasback stats:', e);
+    }
+  } else if (response && 'parsedData' in response && response.parsedData) {
+    stats = response.parsedData;
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PieChart className="h-5 w-5" />
+            Shape Gasback Ecosystem Stats
+          </CardTitle>
+          <CardDescription>
+            Comprehensive statistics about the entire Shape gasback ecosystem
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="includeSamples"
+                checked={includeSampleData}
+                onCheckedChange={setIncludeSampleData}
+                disabled={isPending}
+              />
+              <Label htmlFor="includeSamples">Include Sample Data (Top Tokens & Contracts)</Label>
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleSubmit} disabled={isPending} className="flex-1">
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Get Ecosystem Stats
+              </Button>
+              <Button onClick={() => refetch()} disabled={isPending} variant="outline">
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {error && (
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">{error.message}</AlertDescription>
+        </Alert>
+      )}
+
+      {stats && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              title="Total Tokens"
+              value={stats.ecosystem.totalTokens.toLocaleString()}
+              icon={Activity}
+              color="blue"
+            />
+            <MetricCard
+              title="Active Tokens"
+              value={`${stats.ecosystem.activeTokens.toLocaleString()} (${stats.ecosystem.activeTokenPercentage})`}
+              icon={Zap}
+              color="green"
+            />
+            <MetricCard
+              title="Total Owners"
+              value={stats.ecosystem.estimatedTotalOwners.toLocaleString()}
+              icon={Users}
+              color="orange"
+            />
+            <MetricCard
+              title="Total Earned"
+              value={`${parseFloat(stats.earnings.estimatedTotalEarnedETH).toFixed(2)} ETH`}
+              icon={DollarSign}
+              color="purple"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Card className="border-2 border-green-200 bg-green-50">
+              <CardHeader>
+                <CardTitle className="text-green-700">Earnings Distribution</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Median:</span>
+                  <span className="font-mono text-sm">
+                    {parseFloat(stats.distribution.medianEarningsETH).toFixed(6)} ETH
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Top 10%:</span>
+                  <span className="font-mono text-sm">
+                    {parseFloat(stats.distribution.top10PercentileETH).toFixed(6)} ETH
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Top 5%:</span>
+                  <span className="font-mono text-sm">
+                    {parseFloat(stats.distribution.top5PercentileETH).toFixed(6)} ETH
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Average:</span>
+                  <span className="font-mono text-sm">
+                    {parseFloat(stats.distribution.averageEarningsPerTokenETH).toFixed(6)} ETH
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-blue-200 bg-blue-50">
+              <CardHeader>
+                <CardTitle className="text-blue-700">Contract Analytics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Total Contracts:</span>
+                  <span className="font-mono text-sm">
+                    {stats.contracts.estimatedTotalRegisteredContracts.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Avg per Token:</span>
+                  <span className="font-mono text-sm">
+                    {stats.contracts.averageContractsPerToken}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Unique Sampled:</span>
+                  <span className="font-mono text-sm">
+                    {stats.contracts.sampledUniqueContracts.toLocaleString()}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-purple-200 bg-purple-50">
+              <CardHeader>
+                <CardTitle className="text-purple-700">Withdrawal Stats</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Current Balance:</span>
+                  <span className="font-mono text-sm">
+                    {parseFloat(stats.earnings.estimatedCurrentBalanceETH).toFixed(2)} ETH
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Withdrawn:</span>
+                  <span className="font-mono text-sm">
+                    {parseFloat(stats.earnings.estimatedTotalWithdrawnETH).toFixed(2)} ETH
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Withdrawal Rate:</span>
+                  <span className="font-mono text-sm">{stats.earnings.withdrawalRate}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {stats.samples && (
+            <>
+              {stats.samples.topTokensByEarnings &&
+                stats.samples.topTokensByEarnings.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Top Earning Tokens</CardTitle>
+                      <CardDescription>
+                        Highest earning gasback tokens by total earnings
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {stats.samples.topTokensByEarnings.slice(0, 10).map((token, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                              <div>
+                                <p className="font-medium">Token #{token.tokenId}</p>
+                                <p className="text-xs text-gray-500">
+                                  {token.owner.slice(0, 10)}...{token.owner.slice(-8)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-green-600">
+                                {parseFloat(token.totalEarnedETH).toFixed(6)} ETH
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+              {stats.samples.topContractsByEarnings &&
+                stats.samples.topContractsByEarnings.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Top Earning Contracts</CardTitle>
+                      <CardDescription>
+                        Contracts generating the most gasback rewards
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {stats.samples.topContractsByEarnings.slice(0, 10).map((contract, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                              <div>
+                                <p className="font-mono text-sm">
+                                  {contract.contractAddress.slice(0, 10)}...
+                                  {contract.contractAddress.slice(-8)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-green-600">
+                                {parseFloat(contract.totalEarnedETH).toFixed(6)} ETH
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+            </>
+          )}
+
+          <details className="mt-4">
+            <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+              View raw JSON response
+            </summary>
+            <pre className="mt-2 overflow-auto rounded bg-gray-50 p-2 text-xs">
+              {JSON.stringify(stats, null, 2)}
+            </pre>
+          </details>
         </div>
       )}
     </div>
@@ -761,8 +1139,12 @@ export function AnalyticsDashboard() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="creator" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="top-creators" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="top-creators" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Top Creators
+            </TabsTrigger>
             <TabsTrigger value="creator" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Creator Analytics
@@ -770,6 +1152,10 @@ export function AnalyticsDashboard() {
             <TabsTrigger value="collection" className="flex items-center gap-2">
               <PieChart className="h-4 w-4" />
               Collection Analytics
+            </TabsTrigger>
+            <TabsTrigger value="ecosystem" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Ecosystem Stats
             </TabsTrigger>
           </TabsList>
 
@@ -779,6 +1165,14 @@ export function AnalyticsDashboard() {
 
           <TabsContent value="collection" className="mt-6">
             <CollectionAnalyticsForm />
+          </TabsContent>
+
+          <TabsContent value="top-creators" className="mt-6">
+            <TopShapeCreatorsForm />
+          </TabsContent>
+
+          <TabsContent value="ecosystem" className="mt-6">
+            <ShapeGasbackStatsForm />
           </TabsContent>
         </Tabs>
       </CardContent>

@@ -45,7 +45,7 @@ export function useMcpServerStatus() {
 
 export function useShapeNfts(address: Address | undefined, enabled: boolean = true) {
   return useQuery({
-    queryKey: ['mcp', 'shape-nfts', address],
+    queryKey: ['shape-nfts', address],
     queryFn: async () => {
       const response = await callMcpTool('getShapeNft', {
         address,
@@ -87,7 +87,7 @@ export function useShapeCreatorAnalytics(
   enabled: boolean = true
 ) {
   return useQuery({
-    queryKey: ['mcp', 'shape-creator-analytics', creatorAddress],
+    queryKey: ['shape-creator-analytics', creatorAddress],
     queryFn: async () => {
       const response = await callMcpTool('getShapeCreatorAnalytics', {
         creatorAddress: creatorAddress!,
@@ -122,7 +122,7 @@ export function useShapeCreatorAnalytics(
 }
 
 export function useCollectionAnalytics(
-  contractAddress: string,
+  contractAddress: string | undefined,
   options: {
     includeFloorPrice?: boolean;
     includeSalesHistory?: boolean;
@@ -133,7 +133,7 @@ export function useCollectionAnalytics(
   enabled: boolean = true
 ) {
   return useQuery({
-    queryKey: ['mcp', 'collection-analytics', contractAddress, options],
+    queryKey: ['collection-analytics', contractAddress, options],
     queryFn: async () => {
       const response = await callMcpTool('getCollectionAnalytics', {
         contractAddress: contractAddress,
@@ -166,6 +166,83 @@ export function useCollectionAnalytics(
       return response;
     },
     enabled: enabled && !!contractAddress,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 2,
+  });
+}
+
+export function useTopShapeCreators(
+  limit: number = 50,
+  includeContractDetails: boolean = false,
+  enabled: boolean = true
+) {
+  return useQuery({
+    queryKey: ['top-shape-creators', limit, includeContractDetails],
+    queryFn: async () => {
+      const response = await callMcpTool('getTopShapeCreators', {
+        limit,
+        includeContractDetails,
+      });
+
+      if (response.success && response.result?.content?.[0]?.text) {
+        const responseText = response.result.content[0].text;
+
+        try {
+          const parsedData = JSON.parse(responseText);
+          if (parsedData.error) {
+            throw new Error(parsedData.message || 'Unknown error occurred');
+          }
+          return { ...response, parsedData };
+        } catch (e) {
+          console.error('Failed to parse top creators data:', e);
+          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+        }
+      }
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch top creators');
+      }
+
+      return response;
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 2,
+  });
+}
+
+export function useShapeGasbackStats(includeSampleData: boolean = true, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['shape-gasback-stats', includeSampleData],
+    queryFn: async () => {
+      const response = await callMcpTool('getShapeGasbackStats', {
+        includeSampleData,
+      });
+
+      if (response.success && response.result?.content?.[0]?.text) {
+        const responseText = response.result.content[0].text;
+
+        try {
+          const parsedData = JSON.parse(responseText);
+          if (parsedData.error) {
+            throw new Error(parsedData.message || 'Unknown error occurred');
+          }
+          return { ...response, parsedData };
+        } catch (e) {
+          console.error('Failed to parse gasback stats:', e);
+          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+        }
+      }
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch gasback stats');
+      }
+
+      return response;
+    },
+    enabled,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 2,
