@@ -65,25 +65,14 @@ export type CreatorAnalyticsData = {
 
 export type CollectionAnalyticsData = {
   contractAddress: string;
-  floorPrices?: import('alchemy-sdk').GetFloorPriceResponse;
-  salesAnalytics?: {
-    totalSales: number;
-    totalVolumeETH: string;
-    averagePriceETH: string;
-    marketplaceBreakdown: Record<string, number>;
-  };
-  collectionInfo?: {
-    name: string;
-    symbol: string;
-    totalSupply: string;
-  };
-  recentSales?: Array<{
-    marketplace: string;
-    tokenId: string;
-    priceETH: string;
-    buyer: string;
-    seller: string;
-  }>;
+  timestamp: string;
+  name: string | null;
+  floorPriceETH: number | null;
+  sevenDayVolumeETH: number | null;
+  sevenDaySalesCount: number | null;
+  averageSalePriceETH: number | null;
+  totalSupply: number | null;
+  marketCapETH: number | null;
 };
 
 export type TopCreatorsData = {

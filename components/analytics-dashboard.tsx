@@ -6,14 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -36,15 +28,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { useState } from 'react';
-
-const MARKETPLACES = [
-  { value: 'seaport', label: 'OpenSea (Seaport)' },
-  { value: 'blur', label: 'Blur' },
-  { value: 'looksrare', label: 'LooksRare' },
-  { value: 'x2y2', label: 'X2Y2' },
-  { value: 'wyvern', label: 'OpenSea (Wyvern)' },
-  { value: 'cryptopunks', label: 'CryptoPunks' },
-];
 
 function MetricCard({
   title,
@@ -373,10 +356,6 @@ function CreatorAnalyticsForm() {
 
 function CollectionAnalyticsForm() {
   const [contractAddress, setContractAddress] = useState('');
-  const [includeFloorPrice, setIncludeFloorPrice] = useState(true);
-  const [includeSalesHistory, setIncludeSalesHistory] = useState(true);
-  const [salesHistoryLimit, setSalesHistoryLimit] = useState(20);
-  const [marketplace, setMarketplace] = useState<string | undefined>(undefined);
 
   const {
     data: response,
@@ -385,12 +364,7 @@ function CollectionAnalyticsForm() {
     refetch,
   } = useCollectionAnalytics(
     contractAddress.trim() || undefined,
-    {
-      includeFloorPrice,
-      includeSalesHistory,
-      salesHistoryLimit,
-      marketplace,
-    },
+    {},
     false // Start disabled, use manual refetch
   );
 
@@ -401,11 +375,19 @@ function CollectionAnalyticsForm() {
   };
 
   let analytics: CollectionAnalyticsData | null = null;
+  let parseError: string | null = null;
+
   if (response?.success && response.result?.content?.[0]?.text) {
     try {
-      analytics = JSON.parse(response.result.content[0].text);
+      const parsed = JSON.parse(response.result.content[0].text);
+      if (parsed.error) {
+        parseError = parsed.message || 'Unknown error occurred';
+      } else {
+        analytics = parsed;
+      }
     } catch (e) {
       console.error('Failed to parse collection analytics:', e);
+      parseError = 'Failed to parse server response';
     }
   } else if (response && 'parsedData' in response && response.parsedData) {
     analytics = response.parsedData;
@@ -420,7 +402,7 @@ function CollectionAnalyticsForm() {
             NFT Collection Analytics
           </CardTitle>
           <CardDescription>
-            Comprehensive NFT collection analytics including floor prices and sales data
+            Essential NFT collection metrics: floor price, volume, sales activity, and market cap
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -436,70 +418,6 @@ function CollectionAnalyticsForm() {
                 placeholder="0x..."
                 disabled={isPending}
               />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="salesLimit">Sales History Limit</Label>
-                <Input
-                  id="salesLimit"
-                  type="number"
-                  value={salesHistoryLimit}
-                  onChange={(e) => {
-                    setSalesHistoryLimit(Number(e.target.value));
-                  }}
-                  min={1}
-                  max={100}
-                  disabled={isPending}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="marketplace">Filter by Marketplace</Label>
-                <Select
-                  value={marketplace}
-                  onValueChange={(value) => {
-                    setMarketplace(value === 'all' ? undefined : value);
-                  }}
-                  disabled={isPending}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="All marketplaces" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All marketplaces</SelectItem>
-                    {MARKETPLACES.map((mp) => (
-                      <SelectItem key={mp.value} value={mp.value}>
-                        {mp.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="includeFloor"
-                  checked={includeFloorPrice}
-                  onCheckedChange={(checked) => {
-                    setIncludeFloorPrice(checked);
-                  }}
-                  disabled={isPending}
-                />
-                <Label htmlFor="includeFloor">Include Floor Price Data</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="includeSales"
-                  checked={includeSalesHistory}
-                  onCheckedChange={(checked) => {
-                    setIncludeSalesHistory(checked);
-                  }}
-                  disabled={isPending}
-                />
-                <Label htmlFor="includeSales">Include Sales History</Label>
-              </div>
             </div>
 
             <div className="flex gap-2">
@@ -524,134 +442,103 @@ function CollectionAnalyticsForm() {
         </CardContent>
       </Card>
 
-      {error && (
+      {(error || parseError) && (
         <Alert className="border-red-200 bg-red-50">
           <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">{error.message}</AlertDescription>
+          <AlertDescription className="text-red-800">
+            {parseError || error?.message}
+          </AlertDescription>
         </Alert>
       )}
 
       {analytics && (
         <div className="space-y-6">
-          {analytics.collectionInfo && (
+          {analytics.name && (
             <Card>
               <CardHeader>
-                <CardTitle>Collection Info</CardTitle>
+                <CardTitle>Collection: {analytics.name}</CardTitle>
+                <CardDescription>Contract: {analytics.contractAddress}</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                    <p className="text-sm font-medium text-blue-600">Name</p>
-                    <p className="text-xl font-bold text-blue-800">
-                      {analytics.collectionInfo.name}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                    <p className="text-sm font-medium text-green-600">Symbol</p>
-                    <p className="text-xl font-bold text-green-800">
-                      {analytics.collectionInfo.symbol}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
-                    <p className="text-sm font-medium text-purple-600">Total Supply</p>
-                    <p className="text-xl font-bold text-purple-800">
-                      {analytics.collectionInfo.totalSupply}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
             </Card>
           )}
 
-          {analytics.salesAnalytics && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {analytics.floorPriceETH !== null && (
               <MetricCard
-                title="Total Sales"
-                value={analytics.salesAnalytics.totalSales.toLocaleString()}
-                icon={Activity}
+                title="Floor Price"
+                value={`${analytics.floorPriceETH.toFixed(4)} ETH`}
+                icon={DollarSign}
                 color="blue"
               />
+            )}
+            {analytics.sevenDayVolumeETH !== null && (
               <MetricCard
-                title="Total Volume"
-                value={`${parseFloat(analytics.salesAnalytics.totalVolumeETH).toFixed(2)} ETH`}
-                icon={DollarSign}
+                title="7-Day Volume"
+                value={`${analytics.sevenDayVolumeETH.toFixed(2)} ETH`}
+                icon={Activity}
                 color="green"
               />
+            )}
+            {analytics.sevenDaySalesCount !== null && (
               <MetricCard
-                title="Average Price"
-                value={`${parseFloat(analytics.salesAnalytics.averagePriceETH).toFixed(4)} ETH`}
+                title="7-Day Sales"
+                value={analytics.sevenDaySalesCount.toLocaleString()}
                 icon={TrendingUp}
                 color="orange"
               />
+            )}
+            {analytics.averageSalePriceETH !== null && (
               <MetricCard
-                title="Marketplaces"
-                value={Object.keys(analytics.salesAnalytics.marketplaceBreakdown).length}
-                icon={PieChart}
+                title="Average Price"
+                value={`${analytics.averageSalePriceETH.toFixed(4)} ETH`}
+                icon={LineChart}
                 color="purple"
               />
-            </div>
-          )}
+            )}
+          </div>
 
-          {analytics.salesAnalytics?.marketplaceBreakdown && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Marketplace Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {Object.entries(analytics.salesAnalytics.marketplaceBreakdown).map(
-                    ([marketplace, count]) => {
-                      const percentage = (count / analytics.salesAnalytics!.totalSales) * 100;
-                      return (
-                        <div key={marketplace} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium capitalize">{marketplace}</span>
-                            <span className="text-sm text-gray-600">
-                              {count} sales ({percentage.toFixed(1)}%)
-                            </span>
-                          </div>
-                          <Progress value={percentage} className="h-2" />
-                        </div>
-                      );
-                    }
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {analytics.recentSales && analytics.recentSales.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Sales</CardTitle>
-                <CardDescription>Latest {analytics.recentSales.length} sales</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {analytics.recentSales.slice(0, 5).map((sale, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                        <div>
-                          <p className="font-medium">Token #{sale.tokenId}</p>
-                          <p className="text-xs text-gray-500 capitalize">{sale.marketplace}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">{sale.priceETH} ETH</p>
-                        <p className="text-xs text-gray-500">
-                          {sale.buyer.slice(0, 6)}...{sale.buyer.slice(-4)}
-                        </p>
-                      </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {analytics.totalSupply !== null && (
+              <Card className="border-2 border-indigo-200 bg-indigo-50 text-indigo-700">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="mb-1 text-sm font-medium text-indigo-600">Total Supply</p>
+                      <p className="text-2xl font-bold">{analytics.totalSupply.toLocaleString()}</p>
                     </div>
-                  ))}
+                    <PieChart className="h-8 w-8" />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {analytics.marketCapETH !== null && (
+              <Card className="border-2 border-emerald-200 bg-emerald-50 text-emerald-700">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="mb-1 text-sm font-medium text-emerald-600">Market Cap</p>
+                      <p className="text-2xl font-bold">{analytics.marketCapETH.toFixed(2)} ETH</p>
+                    </div>
+                    <BarChart3 className="h-8 w-8" />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            <Card className="border-2 border-gray-200 bg-gray-50 text-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="mb-1 text-sm font-medium text-gray-600">Data Age</p>
+                    <p className="text-sm font-bold">7-day window</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(analytics.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                  <Zap className="h-8 w-8" />
                 </div>
               </CardContent>
             </Card>
-          )}
+          </div>
 
           <details className="mt-4">
             <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
