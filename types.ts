@@ -47,6 +47,20 @@ export type CollectionAnalyticsData = {
     name: string | null;
     imageUrl: string | null;
   }>;
+  floorPrice: {
+    openSea: {
+      floorPrice: number | null;
+      priceCurrency: string | null;
+      collectionUrl: string | null;
+      retrievedAt: string | null;
+    } | null;
+    looksRare: {
+      floorPrice: number | null;
+      priceCurrency: string | null;
+      collectionUrl: string | null;
+      retrievedAt: string | null;
+    } | null;
+  } | null;
 };
 
 export type CreatorAnalyticsData = {
@@ -82,4 +96,21 @@ export type ShapeNftData = {
     name: string | null;
     imageUrl: string | null;
   }>;
+};
+
+export type StackAchievementsData = {
+  userAddress: string;
+  timestamp: string;
+  hasStack: boolean;
+  totalMedals: number;
+  medalsByTier: {
+    bronze: number;
+    silver: number;
+    gold: number;
+    special: number;
+  };
+  lastMedalClaimed: {
+    medalUID: string;
+    claimedAt: string;
+  } | null;
 };

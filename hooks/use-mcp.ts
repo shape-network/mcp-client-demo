@@ -123,25 +123,13 @@ export function useShapeCreatorAnalytics(
 
 export function useCollectionAnalytics(
   contractAddress: string | undefined,
-  options: {
-    includeFloorPrice?: boolean;
-    includeSalesHistory?: boolean;
-    salesHistoryLimit?: number;
-    fromBlock?: string;
-    marketplace?: string;
-  } = {},
   enabled: boolean = true
 ) {
   return useQuery({
-    queryKey: ['collection-analytics', contractAddress, options],
+    queryKey: ['collection-analytics', contractAddress],
     queryFn: async () => {
       const response = await callMcpTool('getCollectionAnalytics', {
         contractAddress: contractAddress,
-        includeFloorPrice: options.includeFloorPrice ?? true,
-        includeSalesHistory: options.includeSalesHistory ?? true,
-        salesHistoryLimit: options.salesHistoryLimit ?? 20,
-        fromBlock: options.fromBlock,
-        marketplace: options.marketplace,
       });
 
       if (response.success && response.result?.content?.[0]?.text) {
@@ -172,18 +160,11 @@ export function useCollectionAnalytics(
   });
 }
 
-export function useTopShapeCreators(
-  limit: number = 50,
-  includeContractDetails: boolean = false,
-  enabled: boolean = true
-) {
+export function useTopShapeCreators(enabled: boolean = true) {
   return useQuery({
-    queryKey: ['mcp', 'top-shape-creators', limit, includeContractDetails],
+    queryKey: ['mcp', 'top-shape-creators'],
     queryFn: async () => {
-      const response = await callMcpTool('getTopShapeCreators', {
-        limit,
-        includeContractDetails,
-      });
+      const response = await callMcpTool('getTopShapeCreators', {});
 
       if (response.success && response.result?.content?.[0]?.text) {
         const responseText = response.result.content[0].text;
@@ -207,6 +188,42 @@ export function useTopShapeCreators(
       return response;
     },
     enabled,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 2,
+  });
+}
+
+export function useStackAchievements(userAddress: string | undefined, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['stack-achievements', userAddress],
+    queryFn: async () => {
+      const response = await callMcpTool('getStackAchievements', {
+        userAddress: userAddress!,
+      });
+
+      if (response.success && response.result?.content?.[0]?.text) {
+        const responseText = response.result.content[0].text;
+
+        try {
+          const parsedData = JSON.parse(responseText);
+          if (parsedData.error) {
+            throw new Error(parsedData.message || 'Unknown error occurred');
+          }
+          return { ...response, parsedData };
+        } catch (e) {
+          console.error('Failed to parse stack achievements:', e);
+          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+        }
+      }
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch stack achievements');
+      }
+
+      return response;
+    },
+    enabled: enabled && !!userAddress,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 2,
