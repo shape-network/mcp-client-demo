@@ -32,3 +32,85 @@ export type McpResponse = {
   error?: string;
   toolName?: string;
 };
+
+// Frontend types that match backend output types
+export type CollectionAnalyticsData = {
+  contractAddress: string;
+  timestamp: string;
+  name: string | null;
+  symbol: string | null;
+  totalSupply: number | null;
+  ownerCount: number | null;
+  contractType: string | null;
+  sampleNfts: Array<{
+    tokenId: string;
+    name: string | null;
+    imageUrl: string | null;
+  }>;
+  floorPrice: {
+    openSea: {
+      floorPrice: number | null;
+      priceCurrency: string | null;
+      collectionUrl: string | null;
+      retrievedAt: string | null;
+    } | null;
+    looksRare: {
+      floorPrice: number | null;
+      priceCurrency: string | null;
+      collectionUrl: string | null;
+      retrievedAt: string | null;
+    } | null;
+  } | null;
+};
+
+export type CreatorAnalyticsData = {
+  creatorAddress: string;
+  timestamp: string;
+  hasTokens: boolean;
+  totalTokens: number;
+  totalEarnedETH: number;
+  currentBalanceETH: number;
+  totalWithdrawnETH: number;
+  registeredContracts: number;
+};
+
+export type TopCreatorsData = {
+  timestamp: string;
+  totalCreatorsAnalyzed: number;
+  topCreators: Array<{
+    address: string;
+    totalTokens: number;
+    totalEarnedETH: number;
+    currentBalanceETH: number;
+    registeredContracts: number;
+  }>;
+};
+
+export type ShapeNftData = {
+  ownerAddress: string;
+  timestamp: string;
+  totalNfts: number;
+  nfts: Array<{
+    tokenId: string;
+    contractAddress: string;
+    name: string | null;
+    imageUrl: string | null;
+  }>;
+};
+
+export type StackAchievementsData = {
+  userAddress: string;
+  timestamp: string;
+  hasStack: boolean;
+  totalMedals: number;
+  medalsByTier: {
+    bronze: number;
+    silver: number;
+    gold: number;
+    special: number;
+  };
+  lastMedalClaimed: {
+    medalUID: string;
+    claimedAt: string;
+  } | null;
+};

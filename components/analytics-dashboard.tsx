@@ -6,24 +6,24 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useMcpCollectionAnalytics, useMcpShapeCreatorAnalytics } from '@/hooks/use-mcp';
+import {
+  useCollectionAnalytics,
+  useShapeCreatorAnalytics,
+  useStackAchievements,
+  useTopShapeCreators,
+} from '@/hooks/use-mcp';
 import { cn } from '@/lib/utils';
-import type { GetFloorPriceResponse } from 'alchemy-sdk';
+import type {
+  CollectionAnalyticsData,
+  CreatorAnalyticsData,
+  StackAchievementsData,
+  TopCreatorsData,
+} from '@/types';
 import {
   Activity,
   AlertCircle,
   BarChart3,
-  CheckCircle2,
   DollarSign,
   LineChart,
   Loader2,
@@ -33,76 +33,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { useState } from 'react';
-
-const PRESET_CONTRACTS = [
-  {
-    name: 'Sample NFT Collection',
-    address: '0x1234567890123456789012345678901234567890',
-    creator: '0x0987654321098765432109876543210987654321',
-    type: 'NFT Collection',
-  },
-  {
-    name: 'DeFi Protocol',
-    address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-    creator: '0xfedcbafedcbafedcbafedcbafedcbafedcbafedcba',
-    type: 'DeFi',
-  },
-];
-
-const MARKETPLACES = [
-  { value: 'seaport', label: 'OpenSea (Seaport)' },
-  { value: 'blur', label: 'Blur' },
-  { value: 'looksrare', label: 'LooksRare' },
-  { value: 'x2y2', label: 'X2Y2' },
-  { value: 'wyvern', label: 'OpenSea (Wyvern)' },
-  { value: 'cryptopunks', label: 'CryptoPunks' },
-];
-
-type CreatorAnalyticsData = {
-  contractAddress: string;
-  creatorAddress?: string;
-  gasbackInfo: {
-    isRegistered: boolean;
-    totalEarnedETH?: string;
-    currentBalanceETH?: string;
-  };
-  creatorMetrics: {
-    totalTransactions: number;
-    uniqueUsers: number;
-    totalGasUsed: number;
-    averageGasPerTx: number;
-  };
-  recentActivity: Array<{
-    hash: string;
-    from: string;
-    to: string;
-    value: number;
-    blockNumber: string;
-  }>;
-};
-
-type CollectionAnalyticsData = {
-  contractAddress: string;
-  floorPrices?: GetFloorPriceResponse;
-  salesAnalytics?: {
-    totalSales: number;
-    totalVolumeETH: string;
-    averagePriceETH: string;
-    marketplaceBreakdown: Record<string, number>;
-  };
-  collectionInfo?: {
-    name: string;
-    symbol: string;
-    totalSupply: string;
-  };
-  recentSales?: Array<{
-    marketplace: string;
-    tokenId: string;
-    priceETH: string;
-    buyer: string;
-    seller: string;
-  }>;
-};
 
 function MetricCard({
   title,
@@ -154,42 +84,42 @@ function MetricCard({
 }
 
 function CreatorAnalyticsForm() {
-  const [contractAddress, setContractAddress] = useState('');
   const [creatorAddress, setCreatorAddress] = useState('');
-  const [fromBlock, setFromBlock] = useState('');
-  const [includeTxDetails, setIncludeTxDetails] = useState(true);
 
   const {
-    mutate: analyzeCreator,
     data: response,
-    isPending,
+    isLoading: isPending,
     error,
-  } = useMcpShapeCreatorAnalytics();
+    refetch,
+  } = useShapeCreatorAnalytics(
+    creatorAddress.trim() || undefined,
+    false // Start disabled, use manual refetch
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contractAddress.trim()) return;
-
-    analyzeCreator({
-      contractAddress: contractAddress.trim(),
-      creatorAddress: creatorAddress.trim() || undefined,
-      fromBlock: fromBlock.trim() || undefined,
-      includeTxDetails,
-    });
-  };
-
-  const loadPreset = (preset: (typeof PRESET_CONTRACTS)[0]) => {
-    setContractAddress(preset.address);
-    setCreatorAddress(preset.creator);
+    if (!creatorAddress.trim()) return;
+    refetch();
   };
 
   let analytics: CreatorAnalyticsData | null = null;
+  let parseError: string | null = null;
+
   if (response?.success && response.result?.content?.[0]?.text) {
     try {
-      analytics = JSON.parse(response.result.content[0].text);
+      const parsed = JSON.parse(response.result.content[0].text);
+
+      if (parsed.error) {
+        parseError = parsed.message || 'Unknown error occurred';
+      } else {
+        analytics = parsed;
+      }
     } catch (e) {
       console.error('Failed to parse creator analytics:', e);
+      parseError = 'Failed to parse server response';
     }
+  } else if (response && 'parsedData' in response && response.parsedData) {
+    analytics = response.parsedData;
   }
 
   return (
@@ -201,193 +131,159 @@ function CreatorAnalyticsForm() {
             Shape Creator Analytics
           </CardTitle>
           <CardDescription>
-            Analyze gasback earnings, contract interactions, and creator performance metrics
+            Analyze gasback earnings, token count, and registered contracts for a Shape creator
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="contract">Contract Address *</Label>
-                <Input
-                  id="contract"
-                  value={contractAddress}
-                  onChange={(e) => setContractAddress(e.target.value)}
-                  placeholder="0x..."
-                  disabled={isPending}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="creator">Creator Address</Label>
-                <Input
-                  id="creator"
-                  value={creatorAddress}
-                  onChange={(e) => setCreatorAddress(e.target.value)}
-                  placeholder="0x..."
-                  disabled={isPending}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="creator">Creator Address *</Label>
+              <Input
+                id="creator"
+                value={creatorAddress}
+                onChange={(e) => setCreatorAddress(e.target.value)}
+                placeholder="0x..."
+                disabled={isPending}
+              />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="fromBlock">From Block</Label>
-                <Input
-                  id="fromBlock"
-                  value={fromBlock}
-                  onChange={(e) => setFromBlock(e.target.value)}
-                  placeholder="Auto (last 1000 blocks)"
-                  disabled={isPending}
-                />
-              </div>
-              <div className="flex items-center space-x-2 pt-6">
-                <Switch
-                  id="includeTx"
-                  checked={includeTxDetails}
-                  onCheckedChange={setIncludeTxDetails}
-                  disabled={isPending}
-                />
-                <Label htmlFor="includeTx">Include Transaction Details</Label>
-              </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSubmit}
+                disabled={isPending || !creatorAddress.trim()}
+                className="flex-1"
+              >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Analyze Creator
+              </Button>
+              <Button
+                onClick={() => refetch()}
+                disabled={isPending || !creatorAddress.trim()}
+                variant="outline"
+              >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Refresh
+              </Button>
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              <p className="mb-2 w-full text-sm text-gray-600">Quick presets:</p>
-              {PRESET_CONTRACTS.map((preset) => (
-                <Button
-                  key={preset.address}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => loadPreset(preset)}
-                  disabled={isPending}
-                >
-                  {preset.name}
-                </Button>
-              ))}
-            </div>
-
-            <Button
-              onClick={handleSubmit}
-              disabled={isPending || !contractAddress.trim()}
-              className="w-full"
-            >
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Analyze Creator
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {error && (
+      {(error || parseError) && (
         <Alert className="border-red-200 bg-red-50">
           <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">{error.message}</AlertDescription>
+          <AlertDescription className="text-red-800">
+            {parseError || error?.message}
+          </AlertDescription>
         </Alert>
       )}
 
-      {analytics && (
+      {analytics && !analytics.hasTokens && (
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertCircle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            Creator has no gasback tokens on Shape
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {analytics && analytics.hasTokens && (
         <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Creator: {analytics.creatorAddress}</CardTitle>
+              <CardDescription>Gasback analytics for this Shape creator</CardDescription>
+            </CardHeader>
+          </Card>
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <MetricCard
-              title="Total Transactions"
-              value={analytics.creatorMetrics.totalTransactions.toLocaleString()}
+              title="Total Tokens"
+              value={analytics.totalTokens.toLocaleString()}
               icon={Activity}
               color="blue"
             />
             <MetricCard
-              title="Unique Users"
-              value={analytics.creatorMetrics.uniqueUsers.toLocaleString()}
+              title="Registered Contracts"
+              value={analytics.registeredContracts.toLocaleString()}
               icon={Users}
               color="green"
             />
             <MetricCard
-              title="Total Gas Used"
-              value={analytics.creatorMetrics.totalGasUsed.toLocaleString()}
-              subtitle="wei"
-              icon={Zap}
+              title="Total Earned"
+              value={`${analytics.totalEarnedETH.toFixed(6)} ETH`}
+              icon={DollarSign}
               color="orange"
             />
             <MetricCard
-              title="Avg Gas/Tx"
-              value={analytics.creatorMetrics.averageGasPerTx.toLocaleString()}
-              subtitle="wei"
+              title="Current Balance"
+              value={`${analytics.currentBalanceETH.toFixed(6)} ETH`}
               icon={TrendingUp}
               color="purple"
             />
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Gasback Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {analytics.gasbackInfo.isRegistered ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <span className="font-medium">Contract is registered for gasback</span>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="border-2 border-red-200 bg-red-50 text-red-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="mb-1 text-sm font-medium text-red-600">Total Withdrawn</p>
+                    <p className="text-2xl font-bold">
+                      {analytics.totalWithdrawnETH.toFixed(6)} ETH
+                    </p>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                      <p className="text-sm font-medium text-green-600">Total Earned</p>
-                      <p className="text-2xl font-bold text-green-800">
-                        {analytics.gasbackInfo.totalEarnedETH} ETH
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                      <p className="text-sm font-medium text-blue-600">Current Balance</p>
-                      <p className="text-2xl font-bold text-blue-800">
-                        {analytics.gasbackInfo.currentBalanceETH} ETH
-                      </p>
-                    </div>
-                  </div>
+                  <Zap className="h-8 w-8" />
                 </div>
-              ) : (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <AlertCircle className="h-5 w-5" />
-                  <span>Contract is not registered for gasback on Shape</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>
-                Latest {analytics.recentActivity.length} transactions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {analytics.recentActivity.slice(0, 5).map((tx, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                      <div>
-                        <p className="font-mono text-sm">
-                          {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
-                        </p>
-                        <p className="text-xs text-gray-500">Block {tx.blockNumber}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">{tx.value} ETH</p>
-                      <p className="text-xs text-gray-500">
-                        {tx.from.slice(0, 6)}...{tx.from.slice(-4)}
-                      </p>
-                    </div>
+              </CardContent>
+            </Card>
+            <Card className="border-2 border-indigo-200 bg-indigo-50 text-indigo-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="mb-1 text-sm font-medium text-indigo-600">Avg per Token</p>
+                    <p className="text-2xl font-bold">
+                      {analytics.totalTokens > 0
+                        ? (analytics.totalEarnedETH / analytics.totalTokens).toFixed(6)
+                        : '0'}{' '}
+                      ETH
+                    </p>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <PieChart className="h-8 w-8" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-2 border-pink-200 bg-pink-50 text-pink-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="mb-1 text-sm font-medium text-pink-600">Avg per Contract</p>
+                    <p className="text-2xl font-bold">
+                      {analytics.registeredContracts > 0
+                        ? (analytics.totalEarnedETH / analytics.registeredContracts).toFixed(6)
+                        : '0'}{' '}
+                      ETH
+                    </p>
+                  </div>
+                  <BarChart3 className="h-8 w-8" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-2 border-gray-200 bg-gray-50 text-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="mb-1 text-sm font-medium text-gray-600">Data Age</p>
+                    <p className="text-sm font-bold">Real-time</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(analytics.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                  <LineChart className="h-8 w-8" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
     </div>
@@ -396,38 +292,37 @@ function CreatorAnalyticsForm() {
 
 function CollectionAnalyticsForm() {
   const [contractAddress, setContractAddress] = useState('');
-  const [includeFloorPrice, setIncludeFloorPrice] = useState(true);
-  const [includeSalesHistory, setIncludeSalesHistory] = useState(true);
-  const [salesHistoryLimit, setSalesHistoryLimit] = useState(20);
-  const [marketplace, setMarketplace] = useState<string | undefined>(undefined);
 
   const {
-    mutate: analyzeCollection,
     data: response,
-    isPending,
+    isLoading: isPending,
     error,
-  } = useMcpCollectionAnalytics();
+    refetch,
+  } = useCollectionAnalytics(contractAddress.trim() || undefined, false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!contractAddress.trim()) return;
-
-    analyzeCollection({
-      contractAddress: contractAddress.trim(),
-      includeFloorPrice,
-      includeSalesHistory,
-      salesHistoryLimit,
-      marketplace,
-    });
+    refetch();
   };
 
   let analytics: CollectionAnalyticsData | null = null;
+  let parseError: string | null = null;
+
   if (response?.success && response.result?.content?.[0]?.text) {
     try {
-      analytics = JSON.parse(response.result.content[0].text);
+      const parsed = JSON.parse(response.result.content[0].text);
+      if (parsed.error) {
+        parseError = parsed.message || 'Unknown error occurred';
+      } else {
+        analytics = parsed;
+      }
     } catch (e) {
       console.error('Failed to parse collection analytics:', e);
+      parseError = 'Failed to parse server response';
     }
+  } else if (response && 'parsedData' in response && response.parsedData) {
+    analytics = response.parsedData;
   }
 
   return (
@@ -439,7 +334,8 @@ function CollectionAnalyticsForm() {
             NFT Collection Analytics
           </CardTitle>
           <CardDescription>
-            Comprehensive NFT collection analytics including floor prices and sales data
+            Comprehensive NFT collection analysis: supply, holders, token standard, sample NFTs, and
+            marketplace floor prices
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -449,76 +345,263 @@ function CollectionAnalyticsForm() {
               <Input
                 id="collectionContract"
                 value={contractAddress}
-                onChange={(e) => setContractAddress(e.target.value)}
+                onChange={(e) => {
+                  setContractAddress(e.target.value);
+                }}
                 placeholder="0x..."
                 disabled={isPending}
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="salesLimit">Sales History Limit</Label>
-                <Input
-                  id="salesLimit"
-                  type="number"
-                  value={salesHistoryLimit}
-                  onChange={(e) => setSalesHistoryLimit(Number(e.target.value))}
-                  min={1}
-                  max={100}
-                  disabled={isPending}
-                />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSubmit}
+                disabled={isPending || !contractAddress.trim()}
+                className="flex-1"
+              >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Analyze Collection
+              </Button>
+              <Button
+                onClick={() => refetch()}
+                disabled={isPending || !contractAddress.trim()}
+                variant="outline"
+              >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {(error || parseError) && (
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            {parseError || error?.message}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {analytics && (
+        <div className="space-y-6">
+          {analytics.name && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Collection: {analytics.name}</CardTitle>
+                <CardDescription>
+                  {analytics.symbol && `Symbol: ${analytics.symbol} • `}
+                  Contract: {analytics.contractAddress}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {analytics.totalSupply !== null && (
+              <MetricCard
+                title="Total Supply"
+                value={analytics.totalSupply.toLocaleString()}
+                icon={PieChart}
+                color="blue"
+              />
+            )}
+            {analytics.ownerCount !== null && (
+              <MetricCard
+                title="Unique Holders"
+                value={analytics.ownerCount.toLocaleString()}
+                icon={Users}
+                color="green"
+              />
+            )}
+            {analytics.contractType && (
+              <MetricCard
+                title="Token Standard"
+                value={analytics.contractType}
+                icon={Activity}
+                color="orange"
+              />
+            )}
+            {analytics.sampleNfts.length > 0 && (
+              <MetricCard
+                title="Sample NFTs"
+                value={analytics.sampleNfts.length.toString()}
+                subtitle="Available"
+                icon={LineChart}
+                color="purple"
+              />
+            )}
+          </div>
+
+          {analytics.floorPrice &&
+            (analytics.floorPrice.openSea || analytics.floorPrice.looksRare) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Floor Prices</CardTitle>
+                  <CardDescription>Current marketplace floor prices</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {analytics.floorPrice.openSea && (
+                      <div className="rounded-lg border bg-blue-50 p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-blue-700">OpenSea</p>
+                            <p className="text-2xl font-bold text-blue-900">
+                              {analytics.floorPrice.openSea.floorPrice}{' '}
+                              {analytics.floorPrice.openSea.priceCurrency}
+                            </p>
+                            {analytics.floorPrice.openSea.collectionUrl && (
+                              <a
+                                href={analytics.floorPrice.openSea.collectionUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 underline"
+                              >
+                                View Collection
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {analytics.floorPrice.looksRare && (
+                      <div className="rounded-lg border bg-green-50 p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-green-700">LooksRare</p>
+                            <p className="text-2xl font-bold text-green-900">
+                              {analytics.floorPrice.looksRare.floorPrice}{' '}
+                              {analytics.floorPrice.looksRare.priceCurrency}
+                            </p>
+                            {analytics.floorPrice.looksRare.collectionUrl && (
+                              <a
+                                href={analytics.floorPrice.looksRare.collectionUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-green-600 underline"
+                              >
+                                View Collection
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+          {analytics.sampleNfts.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Sample NFTs from Collection</CardTitle>
+                <CardDescription>
+                  Preview of {analytics.sampleNfts.length} NFTs from this collection
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {analytics.sampleNfts.map((nft, idx) => (
+                    <div key={idx} className="rounded-lg border bg-white p-4 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        {nft.imageUrl && (
+                          <img
+                            src={nft.imageUrl}
+                            alt={nft.name || `Token #${nft.tokenId}`}
+                            className="h-16 w-16 rounded object-cover"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <p className="font-medium">{nft.name || `Token #${nft.tokenId}`}</p>
+                          <p className="text-sm text-gray-500">#{nft.tokenId}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="border-2 border-gray-200 bg-gray-50 text-gray-700">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="mb-1 text-sm font-medium text-gray-600">Data Source</p>
+                  <p className="text-sm font-bold">onchain Analysis</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(analytics.timestamp).toLocaleString()}
+                  </p>
+                </div>
+                <Zap className="h-8 w-8" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="marketplace">Filter by Marketplace</Label>
-                <Select
-                  value={marketplace}
-                  onValueChange={(value) => setMarketplace(value === 'all' ? undefined : value)}
-                  disabled={isPending}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="All marketplaces" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All marketplaces</SelectItem>
-                    {MARKETPLACES.map((mp) => (
-                      <SelectItem key={mp.value} value={mp.value}>
-                        {mp.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            </CardContent>
+          </Card>
+
+          <details className="mt-4">
+            <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+              View raw JSON response
+            </summary>
+            <pre className="mt-2 overflow-auto rounded bg-gray-50 p-2 text-xs">
+              {JSON.stringify(analytics, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TopShapeCreatorsForm() {
+  const { data: response, isLoading: isPending, error, refetch } = useTopShapeCreators(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    refetch();
+  };
+
+  let topCreators: TopCreatorsData | null = null;
+  if (response?.success && response.result?.content?.[0]?.text) {
+    try {
+      topCreators = JSON.parse(response.result.content[0].text);
+    } catch (e) {
+      console.error('Failed to parse top creators:', e);
+    }
+  } else if (response && 'parsedData' in response && response.parsedData) {
+    topCreators = response.parsedData;
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Top Shape Creators
+          </CardTitle>
+          <CardDescription>
+            Discover the top creators on Shape by gasback earnings and activity
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600">
+              Shows the top 25 creators by Gasback earnings with optimized performance.
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="includeFloor"
-                  checked={includeFloorPrice}
-                  onCheckedChange={setIncludeFloorPrice}
-                  disabled={isPending}
-                />
-                <Label htmlFor="includeFloor">Include Floor Price Data</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="includeSales"
-                  checked={includeSalesHistory}
-                  onCheckedChange={setIncludeSalesHistory}
-                  disabled={isPending}
-                />
-                <Label htmlFor="includeSales">Include Sales History</Label>
-              </div>
+            <div className="flex gap-2">
+              <Button onClick={handleSubmit} disabled={isPending} className="flex-1">
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Get Top Creators
+              </Button>
+              <Button onClick={() => refetch()} disabled={isPending} variant="outline">
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Refresh
+              </Button>
             </div>
-
-            <Button
-              onClick={handleSubmit}
-              disabled={isPending || !contractAddress.trim()}
-              className="w-full"
-            >
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Analyze Collection
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -530,127 +613,268 @@ function CollectionAnalyticsForm() {
         </Alert>
       )}
 
-      {analytics && (
+      {topCreators && (
         <div className="space-y-6">
-          {analytics.collectionInfo && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Collection Info</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                    <p className="text-sm font-medium text-blue-600">Name</p>
-                    <p className="text-xl font-bold text-blue-800">
-                      {analytics.collectionInfo.name}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                    <p className="text-sm font-medium text-green-600">Symbol</p>
-                    <p className="text-xl font-bold text-green-800">
-                      {analytics.collectionInfo.symbol}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
-                    <p className="text-sm font-medium text-purple-600">Total Supply</p>
-                    <p className="text-xl font-bold text-purple-800">
-                      {analytics.collectionInfo.totalSupply}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <MetricCard
+              title="Total Creators"
+              value={topCreators.totalCreatorsAnalyzed.toLocaleString()}
+              icon={Users}
+              color="blue"
+            />
+            <MetricCard
+              title="Top Creators Shown"
+              value={topCreators.topCreators.length.toLocaleString()}
+              icon={TrendingUp}
+              color="green"
+            />
+            <MetricCard
+              title="Data Updated"
+              value={new Date(topCreators.timestamp).toLocaleTimeString()}
+              subtitle={new Date(topCreators.timestamp).toLocaleDateString()}
+              icon={Activity}
+              color="orange"
+            />
+          </div>
 
-          {analytics.salesAnalytics && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <MetricCard
-                title="Total Sales"
-                value={analytics.salesAnalytics.totalSales.toLocaleString()}
-                icon={Activity}
-                color="blue"
-              />
-              <MetricCard
-                title="Total Volume"
-                value={`${parseFloat(analytics.salesAnalytics.totalVolumeETH).toFixed(2)} ETH`}
-                icon={DollarSign}
-                color="green"
-              />
-              <MetricCard
-                title="Average Price"
-                value={`${parseFloat(analytics.salesAnalytics.averagePriceETH).toFixed(4)} ETH`}
-                icon={TrendingUp}
-                color="orange"
-              />
-              <MetricCard
-                title="Marketplaces"
-                value={Object.keys(analytics.salesAnalytics.marketplaceBreakdown).length}
-                icon={PieChart}
-                color="purple"
-              />
-            </div>
-          )}
-
-          {analytics.salesAnalytics?.marketplaceBreakdown && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Marketplace Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {Object.entries(analytics.salesAnalytics.marketplaceBreakdown).map(
-                    ([marketplace, count]) => {
-                      const percentage = (count / analytics.salesAnalytics!.totalSales) * 100;
-                      return (
-                        <div key={marketplace} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium capitalize">{marketplace}</span>
-                            <span className="text-sm text-gray-600">
-                              {count} sales ({percentage.toFixed(1)}%)
-                            </span>
-                          </div>
-                          <Progress value={percentage} className="h-2" />
-                        </div>
-                      );
-                    }
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {analytics.recentSales && analytics.recentSales.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Sales</CardTitle>
-                <CardDescription>Latest {analytics.recentSales.length} sales</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {analytics.recentSales.slice(0, 5).map((sale, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                        <div>
-                          <p className="font-medium">Token #{sale.tokenId}</p>
-                          <p className="text-xs text-gray-500 capitalize">{sale.marketplace}</p>
-                        </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Creators by Gasback Earnings</CardTitle>
+              <CardDescription>
+                Showing top {topCreators.topCreators.length} creators ranked by total gasback
+                earnings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {topCreators.topCreators.slice(0, 20).map((creator, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600">
+                        #{idx + 1}
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold">{sale.priceETH} ETH</p>
+                      <div>
+                        <p className="font-mono text-sm">
+                          {creator.address.slice(0, 10)}...{creator.address.slice(-8)}
+                        </p>
                         <p className="text-xs text-gray-500">
-                          {sale.buyer.slice(0, 6)}...{sale.buyer.slice(-4)}
+                          {creator.totalTokens} tokens • {creator.registeredContracts} contracts
                         </p>
                       </div>
                     </div>
-                  ))}
+                    <div className="text-right">
+                      <p className="font-bold text-green-600">
+                        {creator.totalEarnedETH.toFixed(4)} ETH
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Balance: {creator.currentBalanceETH.toFixed(4)} ETH
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                {topCreators.topCreators.length > 20 && (
+                  <p className="text-center text-sm text-gray-500">
+                    ... and {topCreators.topCreators.length - 20} more creators
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <details className="mt-4">
+            <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+              View raw JSON response
+            </summary>
+            <pre className="mt-2 overflow-auto rounded bg-gray-50 p-2 text-xs">
+              {JSON.stringify(topCreators, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StackAchievementsForm() {
+  const [userAddress, setUserAddress] = useState('');
+
+  const {
+    data: response,
+    isLoading: isPending,
+    error,
+    refetch,
+  } = useStackAchievements(userAddress.trim() || undefined, false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userAddress.trim()) return;
+    refetch();
+  };
+
+  let achievements: StackAchievementsData | null = null;
+  let parseError: string | null = null;
+
+  if (response?.success && response.result?.content?.[0]?.text) {
+    try {
+      const parsed = JSON.parse(response.result.content[0].text);
+
+      if (parsed.error) {
+        parseError = parsed.message || 'Unknown error occurred';
+      } else {
+        achievements = parsed;
+      }
+    } catch (e) {
+      console.error('Failed to parse stack achievements:', e);
+      parseError = 'Failed to parse server response';
+    }
+  } else if (response && 'parsedData' in response && response.parsedData) {
+    achievements = response.parsedData;
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Stack Achievements
+          </CardTitle>
+          <CardDescription>
+            Track Stack medals and achievements on Shape - dynamic NFTs for contributions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="userAddress">User Address *</Label>
+              <Input
+                id="userAddress"
+                value={userAddress}
+                onChange={(e) => setUserAddress(e.target.value)}
+                placeholder="0x..."
+                disabled={isPending}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSubmit}
+                disabled={isPending || !userAddress.trim()}
+                className="flex-1"
+              >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Get Achievements
+              </Button>
+              <Button
+                onClick={() => refetch()}
+                disabled={isPending || !userAddress.trim()}
+                variant="outline"
+              >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {(error || parseError) && (
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            {parseError || error?.message}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {achievements && !achievements.hasStack && (
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertCircle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            User does not have a Stack NFT on Shape
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {achievements && achievements.hasStack && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>User: {achievements.userAddress}</CardTitle>
+              <CardDescription>Stack achievements and medal counts</CardDescription>
+            </CardHeader>
+          </Card>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              title="Total Medals"
+              value={achievements.totalMedals.toLocaleString()}
+              icon={Activity}
+              color="blue"
+            />
+            <MetricCard
+              title="Bronze Medals"
+              value={achievements.medalsByTier.bronze.toLocaleString()}
+              icon={DollarSign}
+              color="orange"
+            />
+            <MetricCard
+              title="Silver Medals"
+              value={achievements.medalsByTier.silver.toLocaleString()}
+              icon={Users}
+              color="green"
+            />
+            <MetricCard
+              title="Gold + Special"
+              value={(
+                achievements.medalsByTier.gold + achievements.medalsByTier.special
+              ).toLocaleString()}
+              icon={TrendingUp}
+              color="purple"
+            />
+          </div>
+
+          {achievements.lastMedalClaimed && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Latest Achievement</CardTitle>
+                <CardDescription>Most recently claimed medal</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-yellow-400 to-orange-500">
+                    <TrendingUp className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium">
+                      Medal #{achievements.lastMedalClaimed.medalUID.slice(0, 8)}...
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Claimed: {new Date(achievements.lastMedalClaimed.claimedAt).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           )}
+
+          <Card className="border-2 border-gray-200 bg-gray-50 text-gray-700">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="mb-1 text-sm font-medium text-gray-600">Achievement Data</p>
+                  <p className="text-sm font-bold">Real-time</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(achievements.timestamp).toLocaleString()}
+                  </p>
+                </div>
+                <Zap className="h-8 w-8" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
@@ -666,12 +890,17 @@ export function AnalyticsDashboard() {
           Shape Analytics Dashboard
         </CardTitle>
         <CardDescription>
-          Comprehensive analytics for Shape ecosystem contracts and NFT collections
+          Comprehensive analytics for Shape ecosystem: gasback creators, NFT collections with floor
+          prices, and Stack achievements
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="creator" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="top-creators" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="top-creators" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Top Creators
+            </TabsTrigger>
             <TabsTrigger value="creator" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Creator Analytics
@@ -679,6 +908,10 @@ export function AnalyticsDashboard() {
             <TabsTrigger value="collection" className="flex items-center gap-2">
               <PieChart className="h-4 w-4" />
               Collection Analytics
+            </TabsTrigger>
+            <TabsTrigger value="stack" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Stack Achievements
             </TabsTrigger>
           </TabsList>
 
@@ -688,6 +921,14 @@ export function AnalyticsDashboard() {
 
           <TabsContent value="collection" className="mt-6">
             <CollectionAnalyticsForm />
+          </TabsContent>
+
+          <TabsContent value="top-creators" className="mt-6">
+            <TopShapeCreatorsForm />
+          </TabsContent>
+
+          <TabsContent value="stack" className="mt-6">
+            <StackAchievementsForm />
           </TabsContent>
         </Tabs>
       </CardContent>
