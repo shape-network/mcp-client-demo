@@ -333,7 +333,7 @@ function CollectionAnalyticsForm() {
             NFT Collection Analytics
           </CardTitle>
           <CardDescription>
-            Essential NFT collection metrics: floor price, volume, sales activity, and market cap
+            onchain NFT collection analysis: supply, holders, token standard, and sample NFTs
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -388,88 +388,96 @@ function CollectionAnalyticsForm() {
             <Card>
               <CardHeader>
                 <CardTitle>Collection: {analytics.name}</CardTitle>
-                <CardDescription>Contract: {analytics.contractAddress}</CardDescription>
+                <CardDescription>
+                  {analytics.symbol && `Symbol: ${analytics.symbol} • `}
+                  Contract: {analytics.contractAddress}
+                </CardDescription>
               </CardHeader>
             </Card>
           )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {analytics.floorPriceETH !== null && (
+            {analytics.totalSupply !== null && (
               <MetricCard
-                title="Floor Price"
-                value={`${analytics.floorPriceETH.toFixed(4)} ETH`}
-                icon={DollarSign}
+                title="Total Supply"
+                value={analytics.totalSupply.toLocaleString()}
+                icon={PieChart}
                 color="blue"
               />
             )}
-            {analytics.sevenDayVolumeETH !== null && (
+            {analytics.ownerCount !== null && (
               <MetricCard
-                title="7-Day Volume"
-                value={`${analytics.sevenDayVolumeETH.toFixed(2)} ETH`}
-                icon={Activity}
+                title="Unique Holders"
+                value={analytics.ownerCount.toLocaleString()}
+                icon={Users}
                 color="green"
               />
             )}
-            {analytics.sevenDaySalesCount !== null && (
+            {analytics.contractType && (
               <MetricCard
-                title="7-Day Sales"
-                value={analytics.sevenDaySalesCount.toLocaleString()}
-                icon={TrendingUp}
+                title="Token Standard"
+                value={analytics.contractType}
+                icon={Activity}
                 color="orange"
               />
             )}
-            {analytics.averageSalePriceETH !== null && (
+            {analytics.sampleNfts.length > 0 && (
               <MetricCard
-                title="Average Price"
-                value={`${analytics.averageSalePriceETH.toFixed(4)} ETH`}
+                title="Sample NFTs"
+                value={analytics.sampleNfts.length.toString()}
+                subtitle="Available"
                 icon={LineChart}
                 color="purple"
               />
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {analytics.totalSupply !== null && (
-              <Card className="border-2 border-indigo-200 bg-indigo-50 text-indigo-700">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="mb-1 text-sm font-medium text-indigo-600">Total Supply</p>
-                      <p className="text-2xl font-bold">{analytics.totalSupply.toLocaleString()}</p>
+          {analytics.sampleNfts.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Sample NFTs from Collection</CardTitle>
+                <CardDescription>
+                  Preview of {analytics.sampleNfts.length} NFTs from this collection
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {analytics.sampleNfts.map((nft, idx) => (
+                    <div key={idx} className="rounded-lg border bg-white p-4 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        {nft.imageUrl && (
+                          <img
+                            src={nft.imageUrl}
+                            alt={nft.name || `Token #${nft.tokenId}`}
+                            className="h-16 w-16 rounded object-cover"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <p className="font-medium">{nft.name || `Token #${nft.tokenId}`}</p>
+                          <p className="text-sm text-gray-500">#{nft.tokenId}</p>
+                        </div>
+                      </div>
                     </div>
-                    <PieChart className="h-8 w-8" />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            {analytics.marketCapETH !== null && (
-              <Card className="border-2 border-emerald-200 bg-emerald-50 text-emerald-700">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="mb-1 text-sm font-medium text-emerald-600">Market Cap</p>
-                      <p className="text-2xl font-bold">{analytics.marketCapETH.toFixed(2)} ETH</p>
-                    </div>
-                    <BarChart3 className="h-8 w-8" />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            <Card className="border-2 border-gray-200 bg-gray-50 text-gray-700">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="mb-1 text-sm font-medium text-gray-600">Data Age</p>
-                    <p className="text-sm font-bold">7-day window</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(analytics.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                  <Zap className="h-8 w-8" />
+                  ))}
                 </div>
               </CardContent>
             </Card>
-          </div>
+          )}
+
+          <Card className="border-2 border-gray-200 bg-gray-50 text-gray-700">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="mb-1 text-sm font-medium text-gray-600">Data Source</p>
+                  <p className="text-sm font-bold">onchain Analysis</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(analytics.timestamp).toLocaleString()}
+                  </p>
+                </div>
+                <Zap className="h-8 w-8" />
+              </div>
+            </CardContent>
+          </Card>
 
           <details className="mt-4">
             <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
