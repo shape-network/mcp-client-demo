@@ -33,36 +33,7 @@ export type McpResponse = {
   toolName?: string;
 };
 
-export type CreatorAnalyticsData = {
-  creatorAddress: string;
-  hasTokens?: boolean;
-  summary?: {
-    totalTokens: number;
-    totalRegisteredContracts: number;
-    uniqueContracts: number;
-    totalGasbackEarnedETH: string;
-    totalCurrentBalanceETH: string;
-    totalWithdrawnETH: string;
-    averageEarningsPerToken: string;
-    averageEarningsPerContract: string;
-  };
-  tokens?: Array<{
-    tokenId: string;
-    totalEarnedETH: string;
-    currentBalanceETH: string;
-    withdrawnAmountETH: string;
-    registeredContractsCount: number;
-    registeredContracts: string[];
-  }>;
-  contractEarnings?: Array<{
-    contractAddress: string;
-    tokenId: string;
-    totalEarnedETH: string;
-    balanceUpdatedBlock: string;
-  }>;
-  timestamp: string;
-};
-
+// Frontend types that match backend output types
 export type CollectionAnalyticsData = {
   contractAddress: string;
   timestamp: string;
@@ -75,29 +46,37 @@ export type CollectionAnalyticsData = {
   marketCapETH: number | null;
 };
 
+export type CreatorAnalyticsData = {
+  creatorAddress: string;
+  timestamp: string;
+  hasTokens: boolean;
+  totalTokens: number;
+  totalEarnedETH: number;
+  currentBalanceETH: number;
+  totalWithdrawnETH: number;
+  registeredContracts: number;
+};
+
 export type TopCreatorsData = {
-  summary: {
-    totalCreators: number;
-    totalTokensScanned: number;
-    totalEarningsETH: string;
-    totalRegisteredContracts: number;
-    averageEarningsPerCreator: string;
-    topCreatorsShown: number;
-  };
+  timestamp: string;
+  totalCreatorsAnalyzed: number;
   topCreators: Array<{
     address: string;
     totalTokens: number;
-    totalEarnedETH: string;
-    currentBalanceETH: string;
-    totalWithdrawnETH: string;
-    totalRegisteredContracts: number;
-    averagePerToken: string;
-    averagePerContract: string;
-    contractDetails?: Array<{
-      contractAddress: string;
-      tokenId: string;
-      totalEarnedETH: string;
-    }>;
+    totalEarnedETH: number;
+    currentBalanceETH: number;
+    registeredContracts: number;
   }>;
+};
+
+export type ShapeNftData = {
+  ownerAddress: string;
   timestamp: string;
+  totalNfts: number;
+  nfts: Array<{
+    tokenId: string;
+    contractAddress: string;
+    name: string | null;
+    imageUrl: string | null;
+  }>;
 };

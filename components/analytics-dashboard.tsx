@@ -106,12 +106,8 @@ function CreatorAnalyticsForm() {
 
       if (parsed.error) {
         parseError = parsed.message || 'Unknown error occurred';
-      } else if (parsed.hasTokens === false) {
-        analytics = parsed;
-      } else if (parsed.summary) {
-        analytics = parsed;
       } else {
-        parseError = 'Invalid response format';
+        analytics = parsed;
       }
     } catch (e) {
       console.error('Failed to parse creator analytics:', e);
@@ -177,7 +173,7 @@ function CreatorAnalyticsForm() {
         </Alert>
       )}
 
-      {analytics && analytics.hasTokens === false && (
+      {analytics && !analytics.hasTokens && (
         <Alert className="border-yellow-200 bg-yellow-50">
           <AlertCircle className="h-4 w-4 text-yellow-600" />
           <AlertDescription className="text-yellow-800">
@@ -186,43 +182,50 @@ function CreatorAnalyticsForm() {
         </Alert>
       )}
 
-      {analytics && analytics.summary && (
+      {analytics && analytics.hasTokens && (
         <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Creator: {analytics.creatorAddress}</CardTitle>
+              <CardDescription>Gasback analytics for this Shape creator</CardDescription>
+            </CardHeader>
+          </Card>
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               title="Total Tokens"
-              value={analytics.summary.totalTokens.toLocaleString()}
+              value={analytics.totalTokens.toLocaleString()}
               icon={Activity}
               color="blue"
             />
             <MetricCard
               title="Registered Contracts"
-              value={analytics.summary.totalRegisteredContracts.toLocaleString()}
+              value={analytics.registeredContracts.toLocaleString()}
               icon={Users}
               color="green"
             />
             <MetricCard
               title="Total Earned"
-              value={`${parseFloat(analytics.summary.totalGasbackEarnedETH).toFixed(6)} ETH`}
+              value={`${analytics.totalEarnedETH.toFixed(6)} ETH`}
               icon={DollarSign}
               color="orange"
             />
             <MetricCard
               title="Current Balance"
-              value={`${parseFloat(analytics.summary.totalCurrentBalanceETH).toFixed(6)} ETH`}
+              value={`${analytics.currentBalanceETH.toFixed(6)} ETH`}
               icon={TrendingUp}
               color="purple"
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card className="border-2 border-red-200 bg-red-50 text-red-700">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="mb-1 text-sm font-medium text-red-600">Total Withdrawn</p>
                     <p className="text-2xl font-bold">
-                      {parseFloat(analytics.summary.totalWithdrawnETH).toFixed(6)} ETH
+                      {analytics.totalWithdrawnETH.toFixed(6)} ETH
                     </p>
                   </div>
                   <Zap className="h-8 w-8" />
@@ -235,7 +238,10 @@ function CreatorAnalyticsForm() {
                   <div>
                     <p className="mb-1 text-sm font-medium text-indigo-600">Avg per Token</p>
                     <p className="text-2xl font-bold">
-                      {parseFloat(analytics.summary.averageEarningsPerToken).toFixed(6)} ETH
+                      {analytics.totalTokens > 0
+                        ? (analytics.totalEarnedETH / analytics.totalTokens).toFixed(6)
+                        : '0'}{' '}
+                      ETH
                     </p>
                   </div>
                   <PieChart className="h-8 w-8" />
@@ -248,106 +254,31 @@ function CreatorAnalyticsForm() {
                   <div>
                     <p className="mb-1 text-sm font-medium text-pink-600">Avg per Contract</p>
                     <p className="text-2xl font-bold">
-                      {parseFloat(analytics.summary.averageEarningsPerContract).toFixed(6)} ETH
+                      {analytics.registeredContracts > 0
+                        ? (analytics.totalEarnedETH / analytics.registeredContracts).toFixed(6)
+                        : '0'}{' '}
+                      ETH
                     </p>
                   </div>
                   <BarChart3 className="h-8 w-8" />
                 </div>
               </CardContent>
             </Card>
+            <Card className="border-2 border-gray-200 bg-gray-50 text-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="mb-1 text-sm font-medium text-gray-600">Data Age</p>
+                    <p className="text-sm font-bold">Real-time</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(analytics.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                  <LineChart className="h-8 w-8" />
+                </div>
+              </CardContent>
+            </Card>
           </div>
-
-          {analytics.tokens && analytics.tokens.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Gasback Tokens</CardTitle>
-                <CardDescription>
-                  Token-level gasback analytics ({analytics.tokens.length} tokens)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {analytics.tokens.slice(0, 10).map((token, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600">
-                          #{token.tokenId}
-                        </div>
-                        <div>
-                          <p className="font-medium">Token #{token.tokenId}</p>
-                          <p className="text-sm text-gray-500">
-                            {token.registeredContractsCount} contracts
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-green-600">
-                          {parseFloat(token.totalEarnedETH).toFixed(6)} ETH
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Balance: {parseFloat(token.currentBalanceETH).toFixed(6)} ETH
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  {analytics.tokens.length > 10 && (
-                    <p className="text-center text-sm text-gray-500">
-                      ... and {analytics.tokens.length - 10} more tokens
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {analytics.contractEarnings && analytics.contractEarnings.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Contract Earnings</CardTitle>
-                <CardDescription>
-                  Earnings breakdown by registered contracts ({analytics.contractEarnings.length}{' '}
-                  contracts)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {analytics.contractEarnings.slice(0, 10).map((contract, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                        <div>
-                          <p className="font-mono text-sm">
-                            {contract.contractAddress.slice(0, 10)}...
-                            {contract.contractAddress.slice(-8)}
-                          </p>
-                          <p className="text-xs text-gray-500">Token #{contract.tokenId}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-green-600">
-                          {parseFloat(contract.totalEarnedETH).toFixed(6)} ETH
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Block {contract.balanceUpdatedBlock}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  {analytics.contractEarnings.length > 10 && (
-                    <p className="text-center text-sm text-gray-500">
-                      ... and {analytics.contractEarnings.length - 10} more contracts
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       )}
     </div>
@@ -642,30 +573,25 @@ function TopShapeCreatorsForm() {
 
       {topCreators && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <MetricCard
               title="Total Creators"
-              value={topCreators.summary.totalCreators.toLocaleString()}
+              value={topCreators.totalCreatorsAnalyzed.toLocaleString()}
               icon={Users}
               color="blue"
             />
             <MetricCard
-              title="Total Earnings"
-              value={`${parseFloat(topCreators.summary.totalEarningsETH).toFixed(2)} ETH`}
-              icon={DollarSign}
+              title="Top Creators Shown"
+              value={topCreators.topCreators.length.toLocaleString()}
+              icon={TrendingUp}
               color="green"
             />
             <MetricCard
-              title="Tokens Scanned"
-              value={topCreators.summary.totalTokensScanned.toLocaleString()}
+              title="Data Updated"
+              value={new Date(topCreators.timestamp).toLocaleTimeString()}
+              subtitle={new Date(topCreators.timestamp).toLocaleDateString()}
               icon={Activity}
               color="orange"
-            />
-            <MetricCard
-              title="Avg per Creator"
-              value={`${parseFloat(topCreators.summary.averageEarningsPerCreator).toFixed(4)} ETH`}
-              icon={TrendingUp}
-              color="purple"
             />
           </div>
 
@@ -693,17 +619,16 @@ function TopShapeCreatorsForm() {
                           {creator.address.slice(0, 10)}...{creator.address.slice(-8)}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {creator.totalTokens} tokens • {creator.totalRegisteredContracts}{' '}
-                          contracts
+                          {creator.totalTokens} tokens • {creator.registeredContracts} contracts
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-green-600">
-                        {parseFloat(creator.totalEarnedETH).toFixed(4)} ETH
+                        {creator.totalEarnedETH.toFixed(4)} ETH
                       </p>
                       <p className="text-xs text-gray-500">
-                        Balance: {parseFloat(creator.currentBalanceETH).toFixed(4)} ETH
+                        Balance: {creator.currentBalanceETH.toFixed(4)} ETH
                       </p>
                     </div>
                   </div>

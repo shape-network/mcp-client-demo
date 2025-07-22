@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useShapeNfts } from '@/hooks/use-mcp';
 import { cn } from '@/lib/utils';
-import type { OwnedNft, OwnedNftsResponse } from 'alchemy-sdk';
+import type { ShapeNftData } from '@/types';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useAccount } from 'wagmi';
 
@@ -14,13 +14,22 @@ export function ShapeNftViewer() {
 
   const { data, isLoading, error, refetch } = useShapeNfts(address, isConnected);
 
-  const response =
-    data && !error
-      ? { success: true, result: data.result }
-      : error
-        ? { success: false, error: error.message }
-        : null;
-  const nftData = data && 'parsedData' in data ? (data.parsedData as OwnedNftsResponse) : null;
+  let nftData: ShapeNftData | null = null;
+  let parseError: string | null = null;
+
+  if (data?.success && data.result?.content?.[0]?.text) {
+    try {
+      const parsed = JSON.parse(data.result.content[0].text);
+      if (parsed.error) {
+        parseError = parsed.message || 'Unknown error occurred';
+      } else {
+        nftData = parsed;
+      }
+    } catch (e) {
+      console.error('Failed to parse NFT data:', e);
+      parseError = 'Failed to parse server response';
+    }
+  }
 
   if (!isConnected) {
     return (
@@ -68,31 +77,29 @@ export function ShapeNftViewer() {
           </div>
         )}
 
-        {response && !isLoading && (
+        {(nftData || parseError || error) && !isLoading && (
           <Alert
             className={cn({
-              'border-green-200 bg-green-50': response.success,
-              'border-red-200 bg-red-50': !response.success,
+              'border-green-200 bg-green-50': nftData && !parseError && !error,
+              'border-red-200 bg-red-50': parseError || error,
             })}
           >
             <AlertDescription>
-              {response.success ? (
+              {nftData && !parseError && !error ? (
                 <div>
                   <strong>Success!</strong>
-                  {nftData && (
-                    <div className="mt-2">
-                      <div className="text-sm">
-                        Found {nftData.totalCount || 0} NFTs
-                        {nftData.ownedNfts?.length > 0 && (
-                          <span className="ml-2">(showing {nftData.ownedNfts.length})</span>
-                        )}
-                      </div>
+                  <div className="mt-2">
+                    <div className="text-sm">
+                      Found {nftData.totalNfts} NFTs
+                      {nftData.nfts?.length > 0 && (
+                        <span className="ml-2">(showing {nftData.nfts.length})</span>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               ) : (
                 <div>
-                  <strong>Error:</strong> {response.error}
+                  <strong>Error:</strong> {parseError || error?.message}
                 </div>
               )}
             </AlertDescription>
@@ -101,29 +108,31 @@ export function ShapeNftViewer() {
 
         {nftData && (
           <div className="space-y-4">
-            {nftData.ownedNfts?.length > 0 ? (
+            {nftData.nfts?.length > 0 ? (
               <div className="space-y-3">
                 <h4 className="text-sm font-medium">Your NFTs:</h4>
-                {nftData.ownedNfts.slice(0, 5).map((nft: OwnedNft, index: number) => (
+                {nftData.nfts.slice(0, 5).map((nft, index: number) => (
                   <div key={index} className="rounded-lg border p-3">
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="font-medium">{nft.name || `Token #${nft.tokenId}`}</div>
-                        <div className="text-xs text-gray-500">{nft.contract.address}</div>
-                        {nft.contract.name && (
-                          <div className="text-sm text-gray-600">
-                            Collection: {nft.contract.name}
+                        <div className="text-xs text-gray-500">{nft.contractAddress}</div>
+                        {nft.imageUrl && (
+                          <div className="mt-2">
+                            <img
+                              src={nft.imageUrl}
+                              alt={nft.name || `Token #${nft.tokenId}`}
+                              className="h-16 w-16 rounded object-cover"
+                            />
                           </div>
                         )}
                       </div>
-                      <div className="text-xs text-gray-400">{nft.tokenType}</div>
+                      <div className="text-xs text-gray-400">#{nft.tokenId}</div>
                     </div>
                   </div>
                 ))}
-                {nftData.ownedNfts.length > 5 && (
-                  <div className="text-xs text-gray-500">
-                    ...and {nftData.ownedNfts.length - 5} more
-                  </div>
+                {nftData.nfts.length > 5 && (
+                  <div className="text-xs text-gray-500">...and {nftData.nfts.length - 5} more</div>
                 )}
               </div>
             ) : (
