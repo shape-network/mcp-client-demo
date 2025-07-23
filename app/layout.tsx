@@ -1,5 +1,4 @@
 import { Providers } from '@/components/providers';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { WalletConnect } from '@/components/wallet-connect';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
@@ -17,7 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  // todo
+  title: 'Shape MCP Demo',
+  description: 'Demo for mcp-shape: https://github.com/shape-network/mcp-server',
 };
 
 export default function RootLayout({
@@ -56,7 +56,6 @@ export default function RootLayout({
                 </Link>
 
                 <div className="flex items-center gap-2">
-                  <ThemeToggle />
                   <WalletConnect />
                 </div>
               </div>
