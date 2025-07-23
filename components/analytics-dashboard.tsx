@@ -256,6 +256,15 @@ function CreatorAnalyticsForm() {
               </CardContent>
             </Card>
           </div>
+
+          <details className="mt-4">
+            <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+              View raw JSON response
+            </summary>
+            <pre className="mt-2 overflow-auto rounded bg-gray-50 p-2 text-xs">
+              {JSON.stringify(analytics, null, 2)}
+            </pre>
+          </details>
         </div>
       )}
     </div>
@@ -841,6 +850,15 @@ function StackAchievementsForm() {
               </div>
             </CardContent>
           </Card>
+
+          <details className="mt-4">
+            <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+              View raw JSON response
+            </summary>
+            <pre className="mt-2 overflow-auto rounded bg-gray-50 p-2 text-xs">
+              {JSON.stringify(achievements, null, 2)}
+            </pre>
+          </details>
         </div>
       )}
     </div>
