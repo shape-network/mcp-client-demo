@@ -68,7 +68,7 @@ export type CreatorAnalyticsData = {
   timestamp: string;
   hasTokens: boolean;
   totalTokens: number;
-  totalEarnedETH: number;
+  totalGasbackEarnedETH: number;
   currentBalanceETH: number;
   totalWithdrawnETH: number;
   registeredContracts: number;
@@ -79,8 +79,8 @@ export type TopCreatorsData = {
   totalCreatorsAnalyzed: number;
   topCreators: Array<{
     address: string;
-    totalTokens: number;
-    totalEarnedETH: number;
+    ensName: string | null;
+    totalGasbackEarnedETH: number;
     currentBalanceETH: number;
     registeredContracts: number;
   }>;

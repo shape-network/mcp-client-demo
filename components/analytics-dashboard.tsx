@@ -32,6 +32,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
+import Image from 'next/image';
 import { useState } from 'react';
 
 function MetricCard({
@@ -211,7 +212,7 @@ function CreatorAnalyticsForm() {
             />
             <MetricCard
               title="Total Earned"
-              value={`${analytics.totalEarnedETH.toFixed(6)} ETH`}
+              value={`${analytics.totalGasbackEarnedETH.toFixed(6)} ETH`}
               icon={DollarSign}
               color="orange"
             />
@@ -244,7 +245,7 @@ function CreatorAnalyticsForm() {
                     <p className="mb-1 text-sm font-medium text-indigo-600">Avg per Token</p>
                     <p className="text-2xl font-bold">
                       {analytics.totalTokens > 0
-                        ? (analytics.totalEarnedETH / analytics.totalTokens).toFixed(6)
+                        ? (analytics.totalGasbackEarnedETH / analytics.totalTokens).toFixed(6)
                         : '0'}{' '}
                       ETH
                     </p>
@@ -260,7 +261,9 @@ function CreatorAnalyticsForm() {
                     <p className="mb-1 text-sm font-medium text-pink-600">Avg per Contract</p>
                     <p className="text-2xl font-bold">
                       {analytics.registeredContracts > 0
-                        ? (analytics.totalEarnedETH / analytics.registeredContracts).toFixed(6)
+                        ? (analytics.totalGasbackEarnedETH / analytics.registeredContracts).toFixed(
+                            6
+                          )
                         : '0'}{' '}
                       ETH
                     </p>
@@ -508,7 +511,7 @@ function CollectionAnalyticsForm() {
                     <div key={idx} className="rounded-lg border bg-white p-4 shadow-sm">
                       <div className="flex items-center gap-3">
                         {nft.imageUrl && (
-                          <img
+                          <Image
                             src={nft.imageUrl}
                             alt={nft.name || `Token #${nft.tokenId}`}
                             className="h-16 w-16 rounded object-cover"
@@ -588,10 +591,6 @@ function TopShapeCreatorsForm() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="text-sm text-gray-600">
-              Shows the top 25 creators by Gasback earnings with optimized performance.
-            </div>
-
             <div className="flex gap-2">
               <Button onClick={handleSubmit} disabled={isPending} className="flex-1">
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -658,16 +657,17 @@ function TopShapeCreatorsForm() {
                       </div>
                       <div>
                         <p className="font-mono text-sm">
-                          {creator.address.slice(0, 10)}...{creator.address.slice(-8)}
+                          {creator.ensName ?? creator.address.slice(0, 10)}...
+                          {creator.address.slice(-8)}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {creator.totalTokens} tokens • {creator.registeredContracts} contracts
+                          {creator.registeredContracts} contracts
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-green-600">
-                        {creator.totalEarnedETH.toFixed(4)} ETH
+                        {creator.totalGasbackEarnedETH.toFixed(4)} ETH
                       </p>
                       <p className="text-xs text-gray-500">
                         Balance: {creator.currentBalanceETH.toFixed(4)} ETH
