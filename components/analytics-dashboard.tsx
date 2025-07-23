@@ -179,43 +179,41 @@ function CreatorAnalyticsForm() {
         </Alert>
       )}
 
-      {analytics && !analytics.hasTokens && (
-        <Alert className="border-yellow-200 bg-yellow-50">
-          <AlertCircle className="h-4 w-4 text-yellow-600" />
-          <AlertDescription className="text-yellow-800">
-            Creator has no gasback tokens on Shape
-          </AlertDescription>
-        </Alert>
-      )}
+      {analytics &&
+        analytics.totalGasbackEarnedETH === 0 &&
+        analytics.registeredContracts === 0 && (
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              Creator has no gasback activity on Shape
+            </AlertDescription>
+          </Alert>
+        )}
 
-      {analytics && analytics.hasTokens && (
+      {analytics && (analytics.totalGasbackEarnedETH > 0 || analytics.registeredContracts > 0) && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Creator: {analytics.creatorAddress}</CardTitle>
+              <CardTitle>Creator: {analytics.ensName || analytics.address}</CardTitle>
               <CardDescription>Gasback analytics for this Shape creator</CardDescription>
             </CardHeader>
           </Card>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <MetricCard
-              title="Total Tokens"
-              value={analytics.totalTokens.toLocaleString()}
-              icon={Activity}
-              color="blue"
-            />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <MetricCard
               title="Registered Contracts"
               value={analytics.registeredContracts.toLocaleString()}
               icon={Users}
               color="green"
             />
+
             <MetricCard
               title="Total Earned"
               value={`${analytics.totalGasbackEarnedETH.toFixed(6)} ETH`}
               icon={DollarSign}
               color="orange"
             />
+
             <MetricCard
               title="Current Balance"
               value={`${analytics.currentBalanceETH.toFixed(6)} ETH`}
@@ -224,36 +222,7 @@ function CreatorAnalyticsForm() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="border-2 border-red-200 bg-red-50 text-red-700">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="mb-1 text-sm font-medium text-red-600">Total Withdrawn</p>
-                    <p className="text-2xl font-bold">
-                      {analytics.totalWithdrawnETH.toFixed(6)} ETH
-                    </p>
-                  </div>
-                  <Zap className="h-8 w-8" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-2 border-indigo-200 bg-indigo-50 text-indigo-700">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="mb-1 text-sm font-medium text-indigo-600">Avg per Token</p>
-                    <p className="text-2xl font-bold">
-                      {analytics.totalTokens > 0
-                        ? (analytics.totalGasbackEarnedETH / analytics.totalTokens).toFixed(6)
-                        : '0'}{' '}
-                      ETH
-                    </p>
-                  </div>
-                  <PieChart className="h-8 w-8" />
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-1">
             <Card className="border-2 border-pink-200 bg-pink-50 text-pink-700">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -656,10 +625,7 @@ function TopShapeCreatorsForm() {
                         #{idx + 1}
                       </div>
                       <div>
-                        <p className="font-mono text-sm">
-                          {creator.ensName ?? creator.address.slice(0, 10)}...
-                          {creator.address.slice(-8)}
-                        </p>
+                        <p className="font-mono text-sm">{creator.ensName ?? creator.address}</p>
                         <p className="text-xs text-gray-500">
                           {creator.registeredContracts} contracts
                         </p>

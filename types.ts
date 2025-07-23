@@ -64,26 +64,18 @@ export type CollectionAnalyticsData = {
 };
 
 export type CreatorAnalyticsData = {
-  creatorAddress: string;
+  address: string;
+  ensName: string | null;
   timestamp: string;
-  hasTokens: boolean;
-  totalTokens: number;
   totalGasbackEarnedETH: number;
   currentBalanceETH: number;
-  totalWithdrawnETH: number;
   registeredContracts: number;
 };
 
 export type TopCreatorsData = {
   timestamp: string;
   totalCreatorsAnalyzed: number;
-  topCreators: Array<{
-    address: string;
-    ensName: string | null;
-    totalGasbackEarnedETH: number;
-    currentBalanceETH: number;
-    registeredContracts: number;
-  }>;
+  topCreators: Omit<CreatorAnalyticsData, 'timestamp'>[];
 };
 
 export type ShapeNftData = {
