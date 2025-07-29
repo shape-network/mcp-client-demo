@@ -23,12 +23,11 @@ export async function POST(req: Request) {
     messages,
     maxSteps: 5, // Allow up to 5 sequential tool calls
     system: `You are a helpful assistant for Shape Network blockchain data and Web3 operations.
-            Do not use markdown formatting, avoid using ** ** for bold text or inlining images, just use plain text.
 
-            You have access to multiple tools that can be chained together to provide comprehensive answers:
-            - Use multiple tools in sequence when needed to gather all required information
-            - For example, get gas prices first, then calculate gasback earnings based on those prices
-            - Always respond in plain text only. Do not use markdown formatting.`,
+You have access to multiple tools that can be chained together to provide comprehensive answers:
+- Use multiple tools in sequence when needed to gather all required information
+- For example, get gas prices first, then calculate gasback earnings based on those prices
+- Format your responses using markdown for better readability (bold, lists, code blocks, etc.)`,
     onFinish: async () => {
       await mcpClient.close();
     },

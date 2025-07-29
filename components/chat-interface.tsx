@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import { Bot, ChevronDown, ChevronRight, Info, Send, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export function ChatInterface() {
   const { messages, input, handleInputChange, handleSubmit, status, error, setInput } = useChat({
@@ -106,7 +108,9 @@ export function ChatInterface() {
                           : 'bg-muted'
                       )}
                     >
-                      <div className="break-words whitespace-pre-wrap">{message.content}</div>
+                      <div className="prose prose-sm prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 max-w-none break-words [&_img]:max-w-xs [&_img]:max-h-48 [&_img]:object-contain">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                      </div>
 
                       {/* Show tool indicator when tools were used */}
                       {message.role === 'assistant' &&
