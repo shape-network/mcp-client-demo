@@ -1,6 +1,8 @@
 import { openai } from '@ai-sdk/openai';
 import { experimental_createMCPClient, streamText } from 'ai';
 
+export const maxDuration = 30;
+
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
@@ -9,7 +11,7 @@ export async function POST(req: Request) {
     const mcpClient = await experimental_createMCPClient({
       name: 'shape-mcp',
       transport: {
-        type: 'http',
+        type: 'sse',
         url: 'http://localhost:3002/mcp', // Use http://localhost:3002/mcp for local dev
       },
     });

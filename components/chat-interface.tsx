@@ -10,7 +10,14 @@ import { Bot, Send, User } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
 export function ChatInterface() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const { 
+    messages, 
+    input, 
+    handleInputChange, 
+    handleSubmit, 
+    status,
+    error 
+  } = useChat({
     api: '/api/chat',
   });
 
@@ -98,7 +105,7 @@ export function ChatInterface() {
               </div>
             ))}
             
-            {isLoading && (
+            {(status === 'submitted' || status === 'streaming') && (
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                   <Bot className="h-4 w-4 text-primary-foreground animate-pulse" />
@@ -117,15 +124,22 @@ export function ChatInterface() {
         
         <Separator />
         
+        {error && (
+          <div className="bg-destructive/10 text-destructive rounded p-3 mb-4">
+            <p className="font-medium">Something went wrong</p>
+            <p className="text-sm">{error.message}</p>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
             value={input}
             onChange={handleInputChange}
             placeholder="Ask about blockchain data, Web3 operations, or Shape Network..."
-            disabled={isLoading}
+            disabled={status === 'submitted' || status === 'streaming'}
             className="flex-1"
           />
-          <Button type="submit" disabled={isLoading || !input.trim()}>
+          <Button type="submit" disabled={status === 'submitted' || status === 'streaming' || !input.trim()}>
             <Send className="h-4 w-4" />
           </Button>
         </form>
