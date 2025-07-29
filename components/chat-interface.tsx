@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useChat } from '@ai-sdk/react';
-import { Bot, Info, Send, User } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { Bot, ChevronDown, ChevronRight, Info, Send, User } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 export function ChatInterface() {
   const { messages, input, handleInputChange, handleSubmit, status, error } = useChat({
@@ -17,6 +17,7 @@ export function ChatInterface() {
   });
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -30,14 +31,26 @@ export function ChatInterface() {
     }
   }, [messages]);
 
+  const toggleMessageExpansion = (messageId: string) => {
+    setExpandedMessages((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          <strong>Demo Mode:</strong> This chatbot shows tool calls and raw responses for
-          demonstration purposes. In production, you would typically hide these implementation
-          details and only show the final user-friendly results.
+          <strong>Demo Mode:</strong> Click on assistant responses that used tools to expand and
+          view the tool calls and raw responses. This demonstrates the MCP integration and tool
+          chaining capabilities.
         </AlertDescription>
       </Alert>
 
@@ -81,26 +94,63 @@ export function ChatInterface() {
                     >
                       <div className="break-words whitespace-pre-wrap">{message.content}</div>
 
-                      {/* Display tool calls if present */}
-                      {message.toolInvocations?.map((toolInvocation) => (
-                        <div key={toolInvocation.toolCallId} className="mt-3 border-t pt-3">
-                          <div className="text-muted-foreground mb-2 text-xs font-medium">
-                            🔧 Called tool: {toolInvocation.toolName}
+                      {/* Show tool indicator when tools were used */}
+                      {message.role === 'assistant' &&
+                        message.parts?.some((part) => part.type === 'tool-invocation') && (
+                          <button
+                            onClick={() => toggleMessageExpansion(message.id)}
+                            className="text-muted-foreground hover:text-foreground mt-2 flex items-center gap-2 text-xs transition-colors hover:bg-muted/50 rounded p-1 -ml-1"
+                          >
+                            {expandedMessages.has(message.id) ? (
+                              <ChevronDown className="h-3 w-3" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3" />
+                            )}
+                            <span>
+                              🔧{' '}
+                              {
+                                message.parts.filter((part) => part.type === 'tool-invocation')
+                                  .length
+                              }{' '}
+                              tool
+                              {message.parts.filter((part) => part.type === 'tool-invocation')
+                                .length > 1
+                                ? 's'
+                                : ''}{' '}
+                              used
+                            </span>
+                          </button>
+                        )}
+
+                      {/* Display tool calls if expanded */}
+                      {expandedMessages.has(message.id) &&
+                        message.parts?.some((part) => part.type === 'tool-invocation') && (
+                          <div className="mt-3 border-t pt-3">
+                            <div className="space-y-3">
+                              {message.parts
+                                .filter((part) => part.type === 'tool-invocation')
+                                .map((part, index) => (
+                                  <div key={part.toolInvocation.toolCallId} className="space-y-2">
+                                    <div className="text-muted-foreground text-xs font-medium">
+                                      Step {index + 1}: {part.toolInvocation.toolName}
+                                    </div>
+                                    {part.toolInvocation.state === 'result' && (
+                                      <div className="bg-background/50 rounded p-2 text-sm">
+                                        <pre className="overflow-x-auto whitespace-pre-wrap">
+                                          {JSON.stringify(part.toolInvocation.result, null, 2)}
+                                        </pre>
+                                      </div>
+                                    )}
+                                    {part.toolInvocation.state === 'call' && (
+                                      <div className="rounded bg-blue-50 p-2 text-sm text-blue-700">
+                                        Executing tool...
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                            </div>
                           </div>
-                          {toolInvocation.state === 'result' && (
-                            <div className="bg-background/50 rounded p-2 text-sm">
-                              <pre className="overflow-x-auto whitespace-pre-wrap">
-                                {JSON.stringify(toolInvocation.result, null, 2)}
-                              </pre>
-                            </div>
-                          )}
-                          {toolInvocation.state === 'call' && (
-                            <div className="rounded bg-blue-50 p-2 text-sm text-blue-700">
-                              Calling tool...
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        )}
                     </div>
 
                     {message.role === 'user' && (
