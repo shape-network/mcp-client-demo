@@ -46,14 +46,6 @@ export function ChatInterface() {
     });
   };
 
-  const handleSuggestedPrompt = (prompt: string) => {
-    setInput(prompt);
-    const form = document.querySelector('form') as HTMLFormElement;
-    if (form) {
-      form.requestSubmit();
-    }
-  };
-
   return (
     <div className="flex flex-col gap-4">
       <Alert>
@@ -69,7 +61,7 @@ export function ChatInterface() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
-            MCP Chat Assistant
+            Shape Chat Assistant
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -108,7 +100,7 @@ export function ChatInterface() {
                           : 'bg-muted'
                       )}
                     >
-                      <div className="prose prose-sm prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 max-w-none break-words [&_img]:max-w-xs [&_img]:max-h-48 [&_img]:object-contain">
+                      <div className="prose prose-sm prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 max-w-none break-words [&_img]:max-h-48 [&_img]:max-w-xs [&_img]:object-contain">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
                       </div>
 
@@ -224,7 +216,7 @@ export function ChatInterface() {
                   <Button
                     key={suggestion.title}
                     variant="outline"
-                    onClick={() => handleSuggestedPrompt(suggestion.prompt)}
+                    onClick={() => setInput(suggestion.prompt)}
                     disabled={status === 'submitted' || status === 'streaming'}
                     className="h-auto flex-1 justify-start p-3 text-left"
                   >
@@ -268,6 +260,6 @@ const SUGGESTED_PROMPTS = [
   },
   {
     title: 'Gasback Simulator',
-    prompt: 'How much gasback do I earn with 1000 tx / day during 3 months?',
+    prompt: 'How much gasback do I earn with 10000 tx / day for 3 months?',
   },
 ];
