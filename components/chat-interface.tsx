@@ -202,8 +202,18 @@ export function ChatInterface() {
 
           {error && (
             <div className="bg-destructive/10 text-destructive mb-4 rounded p-3">
-              <p className="font-medium">Something went wrong</p>
-              <p className="text-sm">{error.message}</p>
+              <p className="font-medium">
+                {error.message.includes('429') || error.message.includes('rate limit') 
+                  ? 'Rate Limit Exceeded' 
+                  : 'Something went wrong'
+                }
+              </p>
+              <p className="text-sm">
+                {error.message.includes('429') || error.message.includes('rate limit')
+                  ? 'To prevent abuse of API keys, we\'ve set a rate limit. Please wait a moment before trying again.'
+                  : error.message
+                }
+              </p>
             </div>
           )}
 
