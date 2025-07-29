@@ -270,4 +270,8 @@ const SUGGESTED_PROMPTS = [
     title: 'Gasback Simulator',
     prompt: 'How much gasback do I earn with 1000 tx / day for 6 months?',
   },
+  {
+    title: "Shape's public RPC url",
+    prompt: 'What is Shape Mainnet public RPC url?',
+  },
 ];
