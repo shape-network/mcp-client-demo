@@ -47,9 +47,9 @@ Feel free to explore and use the available tools to provide comprehensive assist
     return result.toDataStreamResponse();
   } catch (error) {
     console.error('Chat API error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Failed to process chat request' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to process chat request' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
