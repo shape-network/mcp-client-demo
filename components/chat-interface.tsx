@@ -65,7 +65,7 @@ export function ChatInterface() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ScrollArea ref={scrollAreaRef} className="h-[500px] w-full pr-4">
+          <ScrollArea ref={scrollAreaRef} className="h-[400px] sm:h-[500px] w-full pr-4">
             <div className="space-y-4">
               {messages.length === 0 && (
                 <div className="text-muted-foreground py-8 text-center">
@@ -94,7 +94,7 @@ export function ChatInterface() {
 
                     <div
                       className={cn(
-                        'max-w-[80%] rounded-lg p-3',
+                        'max-w-[85%] sm:max-w-[80%] rounded-lg p-3',
                         message.role === 'user'
                           ? 'bg-primary text-primary-foreground ml-auto'
                           : 'bg-muted'
@@ -146,7 +146,7 @@ export function ChatInterface() {
                                     </div>
                                     {part.toolInvocation.state === 'result' && (
                                       <div className="bg-background/50 rounded p-2 text-sm">
-                                        <pre className="overflow-x-auto whitespace-pre-wrap">
+                                        <pre className="overflow-x-auto whitespace-pre-wrap text-xs sm:text-sm">
                                           {JSON.stringify(part.toolInvocation.result, null, 2)}
                                         </pre>
                                       </div>
@@ -219,18 +219,18 @@ export function ChatInterface() {
           {messages.length === 0 && (
             <div className="mb-4 space-y-2">
               <p className="text-muted-foreground text-sm">Try these examples:</p>
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {SUGGESTED_PROMPTS.map((suggestion) => (
                   <Button
                     key={suggestion.title}
                     variant="outline"
                     onClick={() => setInput(suggestion.prompt)}
                     disabled={status === 'submitted' || status === 'streaming'}
-                    className="h-auto flex-1 justify-start p-3 text-left"
+                    className="h-auto justify-start p-3 text-left"
                   >
-                    <div>
-                      <div className="text-sm font-medium">{suggestion.title}</div>
-                      <div className="text-muted-foreground mt-1 line-clamp-2 text-xs">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium truncate">{suggestion.title}</div>
+                      <div className="text-muted-foreground mt-1 text-xs line-clamp-3 break-words">
                         {suggestion.prompt}
                       </div>
                     </div>
@@ -246,11 +246,12 @@ export function ChatInterface() {
               onChange={handleInputChange}
               placeholder="Ask about a Shape collection, or how much gasback you can earn"
               disabled={status === 'submitted' || status === 'streaming'}
-              className="flex-1"
+              className="flex-1 text-sm sm:text-base"
             />
             <Button
               type="submit"
               disabled={status === 'submitted' || status === 'streaming' || !input.trim()}
+              className="flex-shrink-0"
             >
               <Send className="h-4 w-4" />
             </Button>
