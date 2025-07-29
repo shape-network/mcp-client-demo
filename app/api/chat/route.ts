@@ -24,7 +24,10 @@ export async function POST(req: Request) {
     maxSteps: 5, // Allow up to 5 sequential tool calls
     system: `You are a helpful assistant for Shape Network blockchain data and Web3 operations.
 
-Always respond in plain text only. Do not use markdown formatting.`,
+            You have access to multiple tools that can be chained together to provide comprehensive answers:
+            - Use multiple tools in sequence when needed to gather all required information
+            - For example, get gas prices first, then calculate gasback earnings based on those prices
+            - Always respond in plain text only. Do not use markdown formatting.`,
     onFinish: async () => {
       await mcpClient.close();
     },
