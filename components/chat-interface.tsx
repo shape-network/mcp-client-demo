@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import { Bot, ChevronDown, ChevronRight, Info, Send, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -75,9 +76,10 @@ export function ChatInterface() {
               {messages.map((message) => (
                 <div key={message.id} className="space-y-2">
                   <div
-                    className={`flex items-start gap-3 ${
+                    className={cn(
+                      'flex items-start gap-3',
                       message.role === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
+                    )}
                   >
                     {message.role === 'assistant' && (
                       <div className="bg-primary flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
@@ -86,11 +88,12 @@ export function ChatInterface() {
                     )}
 
                     <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
+                      className={cn(
+                        'max-w-[80%] rounded-lg p-3',
                         message.role === 'user'
                           ? 'bg-primary text-primary-foreground ml-auto'
                           : 'bg-muted'
-                      }`}
+                      )}
                     >
                       <div className="break-words whitespace-pre-wrap">{message.content}</div>
 
@@ -99,7 +102,7 @@ export function ChatInterface() {
                         message.parts?.some((part) => part.type === 'tool-invocation') && (
                           <button
                             onClick={() => toggleMessageExpansion(message.id)}
-                            className="text-muted-foreground hover:text-foreground mt-2 flex items-center gap-2 text-xs transition-colors hover:bg-muted/50 rounded p-1 -ml-1"
+                            className="text-muted-foreground hover:text-foreground hover:bg-muted/50 mt-2 -ml-1 flex items-center gap-2 rounded p-1 text-xs transition-colors"
                           >
                             {expandedMessages.has(message.id) ? (
                               <ChevronDown className="h-3 w-3" />
