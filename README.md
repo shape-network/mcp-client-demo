@@ -1,161 +1,149 @@
-# Builder Kit: Onchain Starter Template
+# Shape MCP Demo
 
-A modern, production-ready starter template for building decentralized applications with sensible defaults.
+A Next.js application that demonstrates Model Context Protocol (MCP) integration with Shape Network blockchain tools, featuring advanced tool chaining capabilities.
 
-<table width="100%">
-  <tr>
-    <td width="50%"><img src="./public/lp-1.png" alt="Builder Kit Screenshot 1" width="100%"/></td>
-    <td width="50%"><img src="./public/lp-2.png" alt="Builder Kit Screenshot 2" width="100%"/></td>
-  </tr>
-</table>
+## Features
 
-See deployed website: [builder-kit.vercel.app](https://builder-kit.vercel.app/)
+- **Advanced Tool Chaining**: AI automatically chains multiple tools together for complex queries
+- **Shape Network Integration**: Direct access to blockchain data and gasback calculations
+- **Real-time Web3 Operations**: Connect wallet and perform blockchain operations
+- **Modern UI**: Built with Next.js 15, React 19, and Tailwind CSS
 
-## ✨ Features
+## Tool Chaining Examples
 
-- **Next.js 15** with App Router and React 19
-- **Web3 Integration** with Wagmi v2 and RainbowKit
-- **React Query** for data fetching
-- **Shape Network** support (Mainnet & Sepolia)
-- **Alchemy SDK** for performant blockchain interactions
-- **TypeScript** for type safety
-- **Tailwind CSS** with theming and dark mode support
-- **Shadcn/ui** for a large range of fully customizable and themable components
-- **Error Boundaries** for graceful error handling
+The AI can automatically chain tools to answer complex questions:
 
-## 🚀 Quick Start
+**Gasback Earnings Calculation:**
 
-1. **Clone or use as template**
+```
+User: "How much gasback can I earn if my contract gets 1000 tx per day for 3 months?"
 
-   ```bash
-   git clone https://github.com/shape-network/builder-kit.git
-   cd builder-kit
-   ```
+AI automatically executes:
+1. getChainStatus() → Gets current gas prices and network metrics
+2. simulateGasbackEarnings() → Calculates earnings using real gas data
+```
 
-2. **Install dependencies**
+**Network Analysis:**
 
-   ```bash
-   yarn install
-   ```
+```
+User: "What are current gas prices and potential earnings for 500 transactions?"
 
-3. **Set up environment variables**
+AI automatically executes:
+1. getChainStatus() → Current network status
+2. simulateGasbackEarnings() → Earnings simulation with current data
+```
 
-   ```bash
-   cp .env-example .env
-   ```
+## Getting Started
 
-   Fill in your environment variables:
+### Prerequisites
 
-   - `NEXT_PUBLIC_ALCHEMY_KEY`: Get from [Alchemy](https://alchemy.com)
-   - `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`: Get from [WalletConnect](https://cloud.walletconnect.com)
-   - `NEXT_PUBLIC_CHAIN_ID`: Use `11011` for Shape Sepolia or `360` for Shape Mainnet
+- Node.js 18+
+- Yarn or npm
+- MCP Server running on port 3002
 
-4. **Start development server**
+### Installation
 
-   ```bash
-   yarn dev
-   ```
+```bash
+# Clone the repository
+git clone <repository-url>
+cd mcp-demo
 
-5. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+# Install dependencies
+yarn install
 
-## 🛠️ Development
+# Set up environment variables
+cp .env.example .env.local
+# Add your API keys and configuration
 
-### Available Scripts
+# Start the development server
+yarn dev
+```
 
-- `yarn dev` - Start development server with Turbopack
-- `yarn build` - Build for production
-- `yarn start` - Start production server
-- `yarn lint` - Run ESLint
-- `yarn lint:fix` - Fix ESLint issues
-- `yarn type-check` - Run TypeScript type checking
-- `yarn format` - Format code with Prettier
-- `yarn format:check` - Check code formatting
+### Testing Tool Chaining
+
+1. Start the application: `yarn dev`
+2. Open http://localhost:3000
+3. Try these example queries to test tool chaining:
+   - "How much gasback can I earn if my contract gets 1000 tx per day for 3 months?"
+   - "What are current gas prices and show me earnings for 250 transactions?"
+   - "Get network status and calculate gasback for 50 daily transactions over 1 week"
+
+Watch the console logs to see the step-by-step tool execution process.
+
+## Architecture
+
+### Tool Chaining Configuration
+
+- **maxSteps**: Set to 10 to allow complex multi-step operations
+- **Enhanced System Prompt**: Guides AI to properly chain gasback calculation tools
+- **Step Debugging**: `onStepFinish` callback logs each step for debugging
+- **Visual Feedback**: UI shows step-by-step tool execution with arrows and step numbers
+
+### AI SDK Configuration
+
+```typescript
+const result = await streamText({
+  model: openai('gpt-4o'),
+  tools,
+  messages,
+  maxSteps: 10, // Allow complex tool chains
+  onStepFinish: ({ text, toolCalls, toolResults, finishReason, usage }) => {
+    // Debug logging for tool chain execution
+  },
+});
+```
+
+## Available MCP Tools
+
+The application connects to Shape Network MCP tools including:
+
+- `getChainStatus` - Network status and gas metrics
+- `simulateGasbackEarnings` - Calculate potential gasback earnings
+- `getShapeCreatorAnalytics` - Creator performance data
+- `getTopShapeCreators` - Top creators by earnings
+- `getCollectionAnalytics` - NFT collection data
+- `getShapeNft` - NFT ownership data
+- `getStackAchievements` - User achievement data
+
+## Development
 
 ### Project Structure
 
 ```
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   │   ├── get-nfts/     # Fetch NFTs for address
-├── components/            # React components
-│   ├── ui/               # Shadcn/ui components
-│   ├── error-boundary.tsx
-│   ├── loading.tsx
-│   ├── providers.tsx
-│   ├── theme-toggle.tsx
-│   └── wallet-connect.tsx
-├── hooks/                 # Custom React hooks
-│   ├── web3.ts           # Web3 data fetching hooks
-│   ├── use-balance.ts    # Wallet balance hook
-│   ├── use-mobile.ts     # Mobile detection hook
-├── lib/                   # Utility functions and configurations
-│   ├── clients.ts        # Alchemy and RPC clients
-│   ├── config.ts         # Environment configuration
-│   ├── utils.ts          # Helper functions
-│   └── web3.ts           # Wagmi configuration
-└── public/               # Static assets
+├── app/
+│   ├── api/chat/route.ts          # Enhanced chat API with tool chaining
+│   └── api/call-mcp-tool/route.ts # Direct MCP tool calls
+├── components/
+│   ├── chat-interface.tsx         # Improved UI with tool chain visualization
+│   └── mcp-status-panel.tsx       # MCP server status and tools
+├── hooks/
+│   └── use-mcp.ts                 # MCP integration hook
+└── types.ts                       # Type definitions
 ```
 
-## 🎨 Customization
+### Key Improvements
 
-### Theme Customization
+1. **System Prompt Enhancement**: Detailed guidance for tool chaining patterns
+2. **Step Visualization**: Clear UI showing tool execution sequence
+3. **Debug Logging**: Console output for tracing tool chain execution
+4. **Increased Step Limit**: maxSteps increased from 5 to 10
+5. **Example Queries**: Built-in examples for testing tool chaining
 
-Edit `app/globals.css` to customize the color scheme:
+## Troubleshooting
 
-```css
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  /* ... other CSS variables */
-}
-```
+### Tool Chaining Not Working
 
-### Adding Components
+1. **Check MCP Server**: Ensure it's running on port 3002
+2. **Verify Tools**: Use the MCP Status Panel to see available tools
+3. **Console Logs**: Check browser/server console for step execution logs
+4. **Query Format**: Use specific questions that require multiple steps
 
-Use Shadcn/ui CLI to add new components:
+### Common Issues
 
-```bash
-npx shadcn@latest add button
-```
+- **Server Connection**: Make sure MCP server is running before starting the app
+- **Tool Availability**: Some tools may require specific parameters or authentication
+- **Rate Limits**: Complex tool chains may hit rate limits on external APIs
 
-### Web3 Integration
+## License
 
-The template includes examples of Web3 integration:
-
-- Wallet connection with RainbowKit
-- Balance fetching with custom hooks
-- Chain switching and network detection
-- Error handling for Web3 operations
-
-## 🌐 Deployment
-
-### Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Connect your repository to [Vercel](https://vercel.com)
-3. Add your environment variables in Vercel dashboard
-4. Deploy!
-
-## 📚 Documentation
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Wagmi Documentation](https://wagmi.sh)
-- [RainbowKit Documentation](https://www.rainbowkit.com)
-- [Shadcn/ui Documentation](https://ui.shadcn.com)
-- [Shape Network Documentation](https://docs.shape.network)
-- [Alchemy SDK Documentation](https://docs.alchemy.com/reference/alchemy-sdk-quickstart)
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to submit a Pull Request.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 💬 Support
-
-- [Shape Discord](http://discord.com/invite/shape-l2)
-- [Twitter/X @Shape_L2](https://x.com/Shape_L2)
-- [Twitter/X @williamhzo](https://x.com/williamhzo)
+MIT

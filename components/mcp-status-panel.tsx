@@ -70,7 +70,7 @@ export function McpStatusPanel() {
             </div>
             {serverStatus === 'connected' && (
               <Badge variant="outline" className="border-green-300 text-green-700">
-                localhost:3002
+                shape-mcp-server.vercel.app
               </Badge>
             )}
           </div>
@@ -103,7 +103,7 @@ export function McpStatusPanel() {
             </>
           )}
           {serverStatus === 'disconnected' && (
-            <span>Ensure the MCP server is running on port 3002</span>
+            <span>Ensure the MCP server is accessible at https://shape-mcp-server.vercel.app/mcp</span>
           )}
           {serverStatus === 'unknown' && <span>Establishing connection...</span>}
         </CardDescription>
@@ -114,8 +114,8 @@ export function McpStatusPanel() {
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertCircle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
-              The MCP server appears to be offline. Make sure it&apos;s running on{' '}
-              <code className="rounded bg-yellow-100 px-1 py-0.5 text-xs">localhost:3002</code>
+              The MCP server appears to be offline. Make sure it&apos;s accessible at{' '}
+              <code className="rounded bg-yellow-100 px-1 py-0.5 text-xs">https://shape-mcp-server.vercel.app/mcp</code>
             </AlertDescription>
           </Alert>
         </CardContent>
