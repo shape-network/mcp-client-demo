@@ -23,6 +23,7 @@ export async function POST(req: Request) {
     messages,
     maxSteps: 5, // Allow up to 5 sequential tool calls
     system: `You are a helpful assistant for Shape Network blockchain data and Web3 operations.
+            Do not use markdown formatting, avoid using ** ** for bold text or inlining images, just use plain text.
 
             You have access to multiple tools that can be chained together to provide comprehensive answers:
             - Use multiple tools in sequence when needed to gather all required information

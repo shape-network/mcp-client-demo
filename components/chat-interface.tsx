@@ -12,7 +12,7 @@ import { Bot, ChevronDown, ChevronRight, Info, Send, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 export function ChatInterface() {
-  const { messages, input, handleInputChange, handleSubmit, status, error } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, status, error, setInput } = useChat({
     api: '/api/chat',
     maxSteps: 5, // Allow up to 5 sequential tool calls
   });
@@ -44,6 +44,14 @@ export function ChatInterface() {
     });
   };
 
+  const handleSuggestedPrompt = (prompt: string) => {
+    setInput(prompt);
+    const form = document.querySelector('form') as HTMLFormElement;
+    if (form) {
+      form.requestSubmit();
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Alert>
@@ -68,8 +76,11 @@ export function ChatInterface() {
               {messages.length === 0 && (
                 <div className="text-muted-foreground py-8 text-center">
                   <Bot className="mx-auto mb-2 h-12 w-12 opacity-50" />
-                  <p>Start a conversation with the MCP assistant!</p>
-                  <p className="mt-1 text-sm">Try</p>
+                  <p>Start a conversation with the Shape assistant!</p>
+                  <p className="mt-1 text-sm">
+                    Try asking about Shape Network data, how much gasback you can earn or analytics
+                    for a given collection.
+                  </p>
                 </div>
               )}
 
@@ -200,11 +211,36 @@ export function ChatInterface() {
             </div>
           )}
 
+          {/* Suggested prompts - only show when no messages */}
+          {messages.length === 0 && (
+            <div className="mb-4 space-y-2">
+              <p className="text-muted-foreground text-sm">Try these examples:</p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                {SUGGESTED_PROMPTS.map((suggestion) => (
+                  <Button
+                    key={suggestion.title}
+                    variant="outline"
+                    onClick={() => handleSuggestedPrompt(suggestion.prompt)}
+                    disabled={status === 'submitted' || status === 'streaming'}
+                    className="h-auto flex-1 justify-start p-3 text-left"
+                  >
+                    <div>
+                      <div className="text-sm font-medium">{suggestion.title}</div>
+                      <div className="text-muted-foreground mt-1 line-clamp-2 text-xs">
+                        {suggestion.prompt}
+                      </div>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="flex gap-2">
             <Input
               value={input}
               onChange={handleInputChange}
-              placeholder="Ask about blockchain data, Web3 operations, or Shape Network..."
+              placeholder="Ask about a Shape collection, or how much gasback you can earn"
               disabled={status === 'submitted' || status === 'streaming'}
               className="flex-1"
             />
@@ -220,3 +256,14 @@ export function ChatInterface() {
     </div>
   );
 }
+
+const SUGGESTED_PROMPTS = [
+  {
+    title: 'Collection Analytics',
+    prompt: 'Give me data about the DeePle collection (0xf2e4b2a15872a20d0ffb336a89b94ba782ce9ba5)',
+  },
+  {
+    title: 'Gasback Simulator',
+    prompt: 'How much gasback do I earn with 1000 tx / day during 3 months?',
+  },
+];
