@@ -65,7 +65,7 @@ export function ChatInterface() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ScrollArea ref={scrollAreaRef} className="h-[400px] sm:h-[500px] w-full pr-4">
+          <ScrollArea ref={scrollAreaRef} className="h-[400px] w-full pr-4 sm:h-[500px]">
             <div className="space-y-4">
               {messages.length === 0 && (
                 <div className="text-muted-foreground py-8 text-center">
@@ -94,7 +94,7 @@ export function ChatInterface() {
 
                     <div
                       className={cn(
-                        'max-w-[85%] sm:max-w-[80%] rounded-lg p-3',
+                        'max-w-[85%] rounded-lg p-3 sm:max-w-[80%]',
                         message.role === 'user'
                           ? 'bg-primary text-primary-foreground ml-auto'
                           : 'bg-muted'
@@ -146,7 +146,7 @@ export function ChatInterface() {
                                     </div>
                                     {part.toolInvocation.state === 'result' && (
                                       <div className="bg-background/50 rounded p-2 text-sm">
-                                        <pre className="overflow-x-auto whitespace-pre-wrap text-xs sm:text-sm">
+                                        <pre className="overflow-x-auto text-xs whitespace-pre-wrap sm:text-sm">
                                           {JSON.stringify(part.toolInvocation.result, null, 2)}
                                         </pre>
                                       </div>
@@ -229,8 +229,8 @@ export function ChatInterface() {
                     className="h-auto justify-start p-3 text-left"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate">{suggestion.title}</div>
-                      <div className="text-muted-foreground mt-1 text-xs line-clamp-3 break-words">
+                      <div className="truncate text-sm font-medium">{suggestion.title}</div>
+                      <div className="text-muted-foreground mt-1 line-clamp-3 text-xs break-words">
                         {suggestion.prompt}
                       </div>
                     </div>
@@ -272,7 +272,7 @@ const SUGGESTED_PROMPTS = [
     prompt: 'How much gasback do I earn with 1000 tx / day for 6 months?',
   },
   {
-    title: "Shape's public RPC url",
-    prompt: 'What is Shape Mainnet public RPC url?',
+    title: 'Shape Network Status & Information',
+    prompt: 'Get the current Shape Network status and RPC information',
   },
 ];

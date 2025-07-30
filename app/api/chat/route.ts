@@ -26,7 +26,8 @@ export async function POST(req: Request) {
 You have access to multiple tools that can be chained together to provide comprehensive answers:
 - Use multiple tools in sequence when needed to gather all required information
 - For example, get gas prices first, then calculate gasback earnings based on those prices
-- Format your responses using markdown for better readability (bold, lists, code blocks, etc.)`,
+- Format your responses using markdown for better readability (bold, lists, code blocks, etc.)
+IMPORTANT: Always try to use the available tools first.`,
     onFinish: async () => {
       await mcpClient.close();
     },
