@@ -19,7 +19,22 @@ export const metadata: Metadata = {
   title: 'Shape MCP Server Demo',
   description:
     'Shape is the culture-first L2 built on top of Ethereum to power the new NFT economy',
-  metadataBase: new URL('https://shape-mcp-server-demo.vercel.app'),
+  openGraph: {
+    type: 'website',
+    url: 'https://shape-mcp-server-demo.vercel.app',
+    title: 'Shape',
+    siteName: 'Shape',
+    description:
+      'Shape is the culture-first L2 built on top of Ethereum to power the new NFT economy',
+    images: [
+      {
+        url: `https://shape-mcp-server-demo.vercel.app/opengraph-image.png`,
+        width: 1200,
+        height: 630,
+        alt: 'Shape',
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
