@@ -16,8 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Shape MCP Demo',
-  description: 'Demo for mcp-shape: https://github.com/shape-network/mcp-server',
+  title: 'Shape MCP Server Demo',
+  description:
+    'Shape is the culture-first L2 built on top of Ethereum to power the new NFT economy',
+  metadataBase: new URL('https://shape-mcp-server-demo.vercel.app'),
 };
 
 export default function RootLayout({

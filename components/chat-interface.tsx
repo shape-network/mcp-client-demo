@@ -94,7 +94,7 @@ export function ChatInterface() {
 
                     <div
                       className={cn(
-                        'rounded-lg p-3 sm:max-w-[80%]',
+                        'rounded-lg p-3',
                         message.role === 'user'
                           ? 'bg-primary text-primary-foreground ml-auto max-w-[70vw]'
                           : 'bg-muted max-w-[60vw]'
