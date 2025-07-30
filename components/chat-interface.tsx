@@ -65,7 +65,7 @@ export function ChatInterface() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ScrollArea ref={scrollAreaRef} className="h-[400px] w-full pr-4 sm:h-[500px]">
+          <ScrollArea ref={scrollAreaRef} className="h-[400px] pr-4 sm:h-[500px]">
             <div className="space-y-4">
               {messages.length === 0 && (
                 <div className="text-muted-foreground py-8 text-center">
@@ -87,17 +87,17 @@ export function ChatInterface() {
                     )}
                   >
                     {message.role === 'assistant' && (
-                      <div className="bg-primary flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
-                        <Bot className="text-primary-foreground h-4 w-4" />
+                      <div className="bg-primary flex size-5 flex-shrink-0 items-center justify-center rounded-full sm:size-8">
+                        <Bot className="text-primary-foreground size-3 sm:size-5" />
                       </div>
                     )}
 
                     <div
                       className={cn(
-                        'max-w-[85%] rounded-lg p-3 sm:max-w-[80%]',
+                        'rounded-lg p-3 sm:max-w-[80%]',
                         message.role === 'user'
-                          ? 'bg-primary text-primary-foreground ml-auto'
-                          : 'bg-muted'
+                          ? 'bg-primary text-primary-foreground ml-auto max-w-[70vw]'
+                          : 'bg-muted max-w-[60vw]'
                       )}
                     >
                       <div className="prose prose-sm prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 max-w-none break-words [&_img]:max-h-48 [&_img]:max-w-xs [&_img]:object-contain">
