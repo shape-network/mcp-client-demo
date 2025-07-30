@@ -55,12 +55,12 @@ export function McpStatusPanel() {
   return (
     <Card className={cn('border-2', status.bgColor)}>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col items-start justify-between gap-2 md:flex-row md:items-center md:gap-0">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <div
                 className={cn(
-                  'h-3 w-3 rounded-full',
+                  'hidden h-3 w-3 rounded-full md:block',
                   status.dotColor,
                   isLoading && 'animate-pulse'
                 )}
@@ -103,7 +103,9 @@ export function McpStatusPanel() {
             </>
           )}
           {serverStatus === 'disconnected' && (
-            <span>Ensure the MCP server is accessible at https://shape-mcp-server.vercel.app/mcp</span>
+            <span>
+              Ensure the MCP server is accessible at https://shape-mcp-server.vercel.app/mcp
+            </span>
           )}
           {serverStatus === 'unknown' && <span>Establishing connection...</span>}
         </CardDescription>
@@ -115,7 +117,9 @@ export function McpStatusPanel() {
             <AlertCircle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
               The MCP server appears to be offline. Make sure it&apos;s accessible at{' '}
-              <code className="rounded bg-yellow-100 px-1 py-0.5 text-xs">https://shape-mcp-server.vercel.app/mcp</code>
+              <code className="rounded bg-yellow-100 px-1 py-0.5 text-xs">
+                https://shape-mcp-server.vercel.app/mcp
+              </code>
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -128,7 +132,7 @@ export function McpStatusPanel() {
             <div className="grid gap-3 sm:grid-cols-2">
               {availableTools.map((tool) => (
                 <div key={tool.name} className="rounded-lg border bg-white p-3 shadow-sm">
-                  <div className="mb-2 flex items-center gap-2">
+                  <div className="mb-2 flex flex-col items-start gap-2 md:flex-row md:items-center">
                     <code className="rounded bg-blue-50 px-2 py-1 font-mono text-xs text-blue-700">
                       {tool.name}
                     </code>
