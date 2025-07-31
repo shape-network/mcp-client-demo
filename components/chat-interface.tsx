@@ -53,9 +53,8 @@ export function ChatInterface() {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          <strong>Demo Mode:</strong> Click on assistant responses that used tools to expand and
-          view the tool calls and raw responses. This demonstrates the MCP integration and tool
-          chaining capabilities.
+          <strong>Demo Mode (rate limited):</strong> Click on assistant responses that used tools to
+          expand and view the tool calls and raw responses.
         </AlertDescription>
       </Alert>
 
@@ -69,15 +68,14 @@ export function ChatInterface() {
         <CardContent className="space-y-4">
           {!isConnected ? (
             <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4 text-center">
-              <Wallet className="text-muted-foreground/50 h-16 w-16" />
+              <Wallet className="h-16 w-16 text-gray-300" />
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Connect Your Wallet</h3>
                 <p className="text-muted-foreground max-w-md">
-                  Please connect your wallet to use the AI chatbot.
+                  Please connect your wallet to use the Shape AI chatbot.
                 </p>
               </div>
               <Alert className="max-w-md">
-                <Info className="h-4 w-4" />
                 <AlertDescription>
                   Click the &quot;Connect Wallet&quot; button in the top right corner to get
                   started.
