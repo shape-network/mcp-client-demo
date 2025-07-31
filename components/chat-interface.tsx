@@ -8,12 +8,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
-import { Bot, ChevronDown, ChevronRight, Info, Send, User } from 'lucide-react';
+import { Bot, ChevronDown, ChevronRight, Info, Send, User, Wallet } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useAccount } from 'wagmi';
 
 export function ChatInterface() {
+  const { isConnected } = useAccount();
   const { messages, input, handleInputChange, handleSubmit, status, error, setInput } = useChat({
     api: '/api/chat',
     maxSteps: 5, // Allow up to 5 sequential tool calls
@@ -65,197 +67,223 @@ export function ChatInterface() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ScrollArea ref={scrollAreaRef} className="h-[400px] pr-4 sm:h-[500px]">
-            <div className="space-y-4">
-              {messages.length === 0 && (
-                <div className="text-muted-foreground py-8 text-center">
-                  <Bot className="mx-auto mb-2 h-12 w-12 opacity-50" />
-                  <p>Start a conversation with the Shape assistant!</p>
-                  <p className="mt-1 text-sm">
-                    Try asking about Shape Network data, how much gasback you can earn or analytics
-                    for a given collection.
+          {!isConnected ? (
+            <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4 text-center">
+              <Wallet className="text-muted-foreground/50 h-16 w-16" />
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Connect Your Wallet</h3>
+                <p className="text-muted-foreground max-w-md">
+                  Please connect your wallet to use the AI chatbot.
+                </p>
+              </div>
+              <Alert className="max-w-md">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Click the &quot;Connect Wallet&quot; button in the top right corner to get
+                  started.
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : (
+            <>
+              <ScrollArea ref={scrollAreaRef} className="h-[400px] pr-4 sm:h-[500px]">
+                <div className="space-y-4">
+                  {messages.length === 0 && (
+                    <div className="text-muted-foreground py-8 text-center">
+                      <Bot className="mx-auto mb-2 h-12 w-12 opacity-50" />
+                      <p>Start a conversation with the Shape assistant!</p>
+                      <p className="mt-1 text-sm">
+                        Try asking about Shape Network data, how much gasback you can earn or
+                        analytics for a given collection.
+                      </p>
+                    </div>
+                  )}
+
+                  {messages.map((message) => (
+                    <div key={message.id} className="space-y-2">
+                      <div
+                        className={cn(
+                          'flex items-start gap-3',
+                          message.role === 'user' ? 'justify-end' : 'justify-start'
+                        )}
+                      >
+                        {message.role === 'assistant' && (
+                          <div className="bg-primary flex size-5 flex-shrink-0 items-center justify-center rounded-full sm:size-8">
+                            <Bot className="text-primary-foreground size-3 sm:size-5" />
+                          </div>
+                        )}
+
+                        <div
+                          className={cn(
+                            'rounded-lg p-3',
+                            message.role === 'user'
+                              ? 'bg-primary text-primary-foreground ml-auto max-w-[70vw]'
+                              : 'bg-muted max-w-[60vw]'
+                          )}
+                        >
+                          <div className="prose prose-sm prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 max-w-none break-words [&_img]:max-h-48 [&_img]:max-w-xs [&_img]:object-contain">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+
+                          {/* Show tool indicator when tools were used */}
+                          {message.role === 'assistant' &&
+                            message.parts?.some((part) => part.type === 'tool-invocation') && (
+                              <button
+                                onClick={() => toggleMessageExpansion(message.id)}
+                                className="text-muted-foreground hover:text-foreground hover:bg-muted/50 mt-2 -ml-1 flex items-center gap-2 rounded p-1 text-xs transition-colors"
+                              >
+                                {expandedMessages.has(message.id) ? (
+                                  <ChevronDown className="h-3 w-3" />
+                                ) : (
+                                  <ChevronRight className="h-3 w-3" />
+                                )}
+                                <span>
+                                  🔧{' '}
+                                  {
+                                    message.parts.filter((part) => part.type === 'tool-invocation')
+                                      .length
+                                  }{' '}
+                                  tool
+                                  {message.parts.filter((part) => part.type === 'tool-invocation')
+                                    .length > 1
+                                    ? 's'
+                                    : ''}{' '}
+                                  used
+                                </span>
+                              </button>
+                            )}
+
+                          {/* Display tool calls if expanded */}
+                          {expandedMessages.has(message.id) &&
+                            message.parts?.some((part) => part.type === 'tool-invocation') && (
+                              <div className="mt-3 border-t pt-3">
+                                <div className="space-y-3">
+                                  {message.parts
+                                    .filter((part) => part.type === 'tool-invocation')
+                                    .map((part, index) => (
+                                      <div
+                                        key={part.toolInvocation.toolCallId}
+                                        className="space-y-2"
+                                      >
+                                        <div className="text-muted-foreground text-xs font-medium">
+                                          Step {index + 1}: {part.toolInvocation.toolName}
+                                        </div>
+                                        {part.toolInvocation.state === 'result' && (
+                                          <div className="bg-background/50 rounded p-2 text-sm">
+                                            <pre className="overflow-x-auto text-xs whitespace-pre-wrap sm:text-sm">
+                                              {JSON.stringify(part.toolInvocation.result, null, 2)}
+                                            </pre>
+                                          </div>
+                                        )}
+                                        {part.toolInvocation.state === 'call' && (
+                                          <div className="rounded bg-blue-50 p-2 text-sm text-blue-700">
+                                            Executing tool...
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            )}
+                        </div>
+
+                        {message.role === 'user' && (
+                          <div className="bg-muted flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                            <User className="h-4 w-4" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {(status === 'submitted' || status === 'streaming') && (
+                    <div className="flex items-start gap-3">
+                      <div className="bg-primary flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                        <Bot className="text-primary-foreground h-4 w-4 animate-pulse" />
+                      </div>
+                      <div className="bg-muted rounded-lg p-3">
+                        <div className="flex items-center gap-1">
+                          <div
+                            className="bg-muted-foreground h-2 w-2 animate-bounce rounded-full"
+                            style={{ animationDelay: '0ms' }}
+                          />
+                          <div
+                            className="bg-muted-foreground h-2 w-2 animate-bounce rounded-full"
+                            style={{ animationDelay: '150ms' }}
+                          />
+                          <div
+                            className="bg-muted-foreground h-2 w-2 animate-bounce rounded-full"
+                            style={{ animationDelay: '300ms' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+
+              <Separator />
+
+              {error && (
+                <div className="bg-destructive/10 text-destructive mb-4 rounded p-3">
+                  <p className="font-medium">
+                    {error.message.includes('429') || error.message.includes('rate limit')
+                      ? 'Rate Limit Exceeded'
+                      : 'Something went wrong'}
+                  </p>
+                  <p className="text-sm">
+                    {error.message.includes('429') || error.message.includes('rate limit')
+                      ? "To prevent abuse of API keys, we've set a rate limit. Please wait a moment before trying again."
+                      : error.message}
                   </p>
                 </div>
               )}
 
-              {messages.map((message) => (
-                <div key={message.id} className="space-y-2">
-                  <div
-                    className={cn(
-                      'flex items-start gap-3',
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    )}
-                  >
-                    {message.role === 'assistant' && (
-                      <div className="bg-primary flex size-5 flex-shrink-0 items-center justify-center rounded-full sm:size-8">
-                        <Bot className="text-primary-foreground size-3 sm:size-5" />
-                      </div>
-                    )}
-
-                    <div
-                      className={cn(
-                        'rounded-lg p-3',
-                        message.role === 'user'
-                          ? 'bg-primary text-primary-foreground ml-auto max-w-[70vw]'
-                          : 'bg-muted max-w-[60vw]'
-                      )}
-                    >
-                      <div className="prose prose-sm prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 max-w-none break-words [&_img]:max-h-48 [&_img]:max-w-xs [&_img]:object-contain">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
-                      </div>
-
-                      {/* Show tool indicator when tools were used */}
-                      {message.role === 'assistant' &&
-                        message.parts?.some((part) => part.type === 'tool-invocation') && (
-                          <button
-                            onClick={() => toggleMessageExpansion(message.id)}
-                            className="text-muted-foreground hover:text-foreground hover:bg-muted/50 mt-2 -ml-1 flex items-center gap-2 rounded p-1 text-xs transition-colors"
-                          >
-                            {expandedMessages.has(message.id) ? (
-                              <ChevronDown className="h-3 w-3" />
-                            ) : (
-                              <ChevronRight className="h-3 w-3" />
-                            )}
-                            <span>
-                              🔧{' '}
-                              {
-                                message.parts.filter((part) => part.type === 'tool-invocation')
-                                  .length
-                              }{' '}
-                              tool
-                              {message.parts.filter((part) => part.type === 'tool-invocation')
-                                .length > 1
-                                ? 's'
-                                : ''}{' '}
-                              used
-                            </span>
-                          </button>
-                        )}
-
-                      {/* Display tool calls if expanded */}
-                      {expandedMessages.has(message.id) &&
-                        message.parts?.some((part) => part.type === 'tool-invocation') && (
-                          <div className="mt-3 border-t pt-3">
-                            <div className="space-y-3">
-                              {message.parts
-                                .filter((part) => part.type === 'tool-invocation')
-                                .map((part, index) => (
-                                  <div key={part.toolInvocation.toolCallId} className="space-y-2">
-                                    <div className="text-muted-foreground text-xs font-medium">
-                                      Step {index + 1}: {part.toolInvocation.toolName}
-                                    </div>
-                                    {part.toolInvocation.state === 'result' && (
-                                      <div className="bg-background/50 rounded p-2 text-sm">
-                                        <pre className="overflow-x-auto text-xs whitespace-pre-wrap sm:text-sm">
-                                          {JSON.stringify(part.toolInvocation.result, null, 2)}
-                                        </pre>
-                                      </div>
-                                    )}
-                                    {part.toolInvocation.state === 'call' && (
-                                      <div className="rounded bg-blue-50 p-2 text-sm text-blue-700">
-                                        Executing tool...
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                            </div>
+              {/* Suggested prompts - only show when no messages */}
+              {messages.length === 0 && (
+                <div className="mb-4 space-y-2">
+                  <p className="text-muted-foreground text-sm">Try these examples:</p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    {SUGGESTED_PROMPTS.map((suggestion) => (
+                      <Button
+                        key={suggestion.title}
+                        variant="outline"
+                        onClick={() => setInput(suggestion.prompt)}
+                        disabled={status === 'submitted' || status === 'streaming'}
+                        className="h-auto justify-start p-3 text-left"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium">{suggestion.title}</div>
+                          <div className="text-muted-foreground mt-1 line-clamp-3 text-xs break-words">
+                            {suggestion.prompt}
                           </div>
-                        )}
-                    </div>
-
-                    {message.role === 'user' && (
-                      <div className="bg-muted flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
-                        <User className="h-4 w-4" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {(status === 'submitted' || status === 'streaming') && (
-                <div className="flex items-start gap-3">
-                  <div className="bg-primary flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
-                    <Bot className="text-primary-foreground h-4 w-4 animate-pulse" />
-                  </div>
-                  <div className="bg-muted rounded-lg p-3">
-                    <div className="flex items-center gap-1">
-                      <div
-                        className="bg-muted-foreground h-2 w-2 animate-bounce rounded-full"
-                        style={{ animationDelay: '0ms' }}
-                      />
-                      <div
-                        className="bg-muted-foreground h-2 w-2 animate-bounce rounded-full"
-                        style={{ animationDelay: '150ms' }}
-                      />
-                      <div
-                        className="bg-muted-foreground h-2 w-2 animate-bounce rounded-full"
-                        style={{ animationDelay: '300ms' }}
-                      />
-                    </div>
+                        </div>
+                      </Button>
+                    ))}
                   </div>
                 </div>
               )}
-            </div>
-          </ScrollArea>
 
-          <Separator />
-
-          {error && (
-            <div className="bg-destructive/10 text-destructive mb-4 rounded p-3">
-              <p className="font-medium">
-                {error.message.includes('429') || error.message.includes('rate limit')
-                  ? 'Rate Limit Exceeded'
-                  : 'Something went wrong'}
-              </p>
-              <p className="text-sm">
-                {error.message.includes('429') || error.message.includes('rate limit')
-                  ? "To prevent abuse of API keys, we've set a rate limit. Please wait a moment before trying again."
-                  : error.message}
-              </p>
-            </div>
+              <form onSubmit={handleSubmit} className="flex gap-2">
+                <Input
+                  value={input}
+                  onChange={handleInputChange}
+                  placeholder="Ask about a Shape collection, or how much gasback you can earn"
+                  disabled={status === 'submitted' || status === 'streaming'}
+                  className="flex-1 text-sm sm:text-base"
+                />
+                <Button
+                  type="submit"
+                  disabled={status === 'submitted' || status === 'streaming' || !input.trim()}
+                  className="flex-shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </form>
+            </>
           )}
-
-          {/* Suggested prompts - only show when no messages */}
-          {messages.length === 0 && (
-            <div className="mb-4 space-y-2">
-              <p className="text-muted-foreground text-sm">Try these examples:</p>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {SUGGESTED_PROMPTS.map((suggestion) => (
-                  <Button
-                    key={suggestion.title}
-                    variant="outline"
-                    onClick={() => setInput(suggestion.prompt)}
-                    disabled={status === 'submitted' || status === 'streaming'}
-                    className="h-auto justify-start p-3 text-left"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium">{suggestion.title}</div>
-                      <div className="text-muted-foreground mt-1 line-clamp-3 text-xs break-words">
-                        {suggestion.prompt}
-                      </div>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <Input
-              value={input}
-              onChange={handleInputChange}
-              placeholder="Ask about a Shape collection, or how much gasback you can earn"
-              disabled={status === 'submitted' || status === 'streaming'}
-              className="flex-1 text-sm sm:text-base"
-            />
-            <Button
-              type="submit"
-              disabled={status === 'submitted' || status === 'streaming' || !input.trim()}
-              className="flex-shrink-0"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </form>
         </CardContent>
       </Card>
     </div>
