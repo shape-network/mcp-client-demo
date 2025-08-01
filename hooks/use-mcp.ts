@@ -2,15 +2,6 @@
 
 import { McpResponse, McpStatusResponse } from '@/types';
 import { useQuery } from '@tanstack/react-query';
-import { Address } from 'viem';
-
-async function checkMcpServerStatus(): Promise<McpStatusResponse> {
-  const res = await fetch('/api/call-mcp-tool');
-  if (!res.ok) {
-    throw new Error(`HTTP error! status: ${res.status}`);
-  }
-  return res.json();
-}
 
 async function callMcpTool(
   toolName: string,
@@ -34,6 +25,14 @@ async function callMcpTool(
   return res.json();
 }
 
+async function checkMcpServerStatus(): Promise<McpStatusResponse> {
+  const res = await fetch('/api/call-mcp-tool');
+  if (!res.ok) {
+    throw new Error(`HTTP error! status: ${res.status}`);
+  }
+  return res.json();
+}
+
 export function useMcpServerStatus() {
   return useQuery({
     queryKey: ['mcp-status'],
@@ -43,54 +42,21 @@ export function useMcpServerStatus() {
   });
 }
 
-export function useShapeNfts(address: Address | undefined, enabled: boolean = true) {
-  return useQuery({
-    queryKey: ['shape-nfts', address],
-    queryFn: async () => {
-      const response = await callMcpTool('getShapeNft', {
-        address,
-        withMetadata: true,
-        pageSize: 10,
-      });
-
-      if (response.success && response.result?.content?.[0]?.text) {
-        const responseText = response.result.content[0].text;
-
-        if (responseText.startsWith('Error:')) {
-          throw new Error(responseText);
-        } else {
-          try {
-            const parsedData = JSON.parse(responseText);
-            return { ...response, parsedData };
-          } catch (e) {
-            console.error('Failed to parse NFT data:', e);
-            throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
-          }
-        }
-      }
-
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch Shape NFTs');
-      }
-
-      return response;
-    },
-    enabled: enabled && !!address,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    retry: 2,
-  });
-}
-
-export function useShapeCreatorAnalytics(
-  creatorAddress: string | undefined,
+export function usePrepareMintSVGNFT(
+  recipientAddress: string,
+  svgContent: string,
+  name: string,
+  description: string,
   enabled: boolean = true
 ) {
   return useQuery({
-    queryKey: ['shape-creator-analytics', creatorAddress],
+    queryKey: ['prepare-mint-svg-nft', recipientAddress, svgContent, name, description],
     queryFn: async () => {
-      const response = await callMcpTool('getShapeCreatorAnalytics', {
-        creatorAddress: creatorAddress!,
+      const response = await callMcpTool('prepareMintSVGNFT', {
+        recipientAddress,
+        svgContent,
+        name,
+        description,
       });
 
       if (response.success && response.result?.content?.[0]?.text) {
@@ -103,129 +69,20 @@ export function useShapeCreatorAnalytics(
           }
           return { ...response, parsedData };
         } catch (e) {
-          console.error('Failed to parse creator analytics:', e);
+          console.error('Failed to parse mint transaction data:', e);
           throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
         }
       }
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch creator analytics');
+        throw new Error(response.error || 'Failed to prepare mint transaction');
       }
 
       return response;
     },
-    enabled: enabled && !!creatorAddress,
-    staleTime: 5 * 60 * 1000,
+    enabled: enabled && !!recipientAddress && !!svgContent && !!name,
+    staleTime: 0, // Don't cache since each request should be unique
     refetchOnWindowFocus: false,
-    retry: 2,
-  });
-}
-
-export function useCollectionAnalytics(
-  contractAddress: string | undefined,
-  enabled: boolean = true
-) {
-  return useQuery({
-    queryKey: ['collection-analytics', contractAddress],
-    queryFn: async () => {
-      const response = await callMcpTool('getCollectionAnalytics', {
-        contractAddress: contractAddress,
-      });
-
-      if (response.success && response.result?.content?.[0]?.text) {
-        const responseText = response.result.content[0].text;
-
-        try {
-          const parsedData = JSON.parse(responseText);
-          if (parsedData.error) {
-            throw new Error(parsedData.message || 'Unknown error occurred');
-          }
-          return { ...response, parsedData };
-        } catch (e) {
-          console.error('Failed to parse collection analytics:', e);
-          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
-        }
-      }
-
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch collection analytics');
-      }
-
-      return response;
-    },
-    enabled: enabled && !!contractAddress,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    retry: 2,
-  });
-}
-
-export function useTopShapeCreators(enabled: boolean = true) {
-  return useQuery({
-    queryKey: ['mcp', 'top-shape-creators'],
-    queryFn: async () => {
-      const response = await callMcpTool('getTopShapeCreators', {});
-
-      if (response.success && response.result?.content?.[0]?.text) {
-        const responseText = response.result.content[0].text;
-
-        try {
-          const parsedData = JSON.parse(responseText);
-          if (parsedData.error) {
-            throw new Error(parsedData.message || 'Unknown error occurred');
-          }
-          return { ...response, parsedData };
-        } catch (e) {
-          console.error('Failed to parse top creators data:', e);
-          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
-        }
-      }
-
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch top creators');
-      }
-
-      return response;
-    },
-    enabled,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    retry: 2,
-  });
-}
-
-export function useStackAchievements(userAddress: string | undefined, enabled: boolean = true) {
-  return useQuery({
-    queryKey: ['stack-achievements', userAddress],
-    queryFn: async () => {
-      const response = await callMcpTool('getStackAchievements', {
-        userAddress: userAddress!,
-      });
-
-      if (response.success && response.result?.content?.[0]?.text) {
-        const responseText = response.result.content[0].text;
-
-        try {
-          const parsedData = JSON.parse(responseText);
-          if (parsedData.error) {
-            throw new Error(parsedData.message || 'Unknown error occurred');
-          }
-          return { ...response, parsedData };
-        } catch (e) {
-          console.error('Failed to parse stack achievements:', e);
-          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
-        }
-      }
-
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch stack achievements');
-      }
-
-      return response;
-    },
-    enabled: enabled && !!userAddress,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    retry: 2,
+    retry: 1,
   });
 }
