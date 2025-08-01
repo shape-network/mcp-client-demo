@@ -15,7 +15,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.0",
+    "@ai-sdk/openai": "^1.3.23",
     "@ai-sdk/react": "^1.2.12",
     "@hookform/resolvers": "^5.0.1",
     "@modelcontextprotocol/sdk": "^1.17.0",
