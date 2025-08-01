@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import type { PrepareMintSVGNFTData } from '@/types';
 import { useChat } from '@ai-sdk/react';
 import { Bot, ChevronDown, ChevronRight, Info, Send, User, Wallet } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAccount } from 'wagmi';
+import { MintTransactionHandler } from './mint-transaction-handler';
 
 export function ChatInterface() {
   const { isConnected } = useAccount();
@@ -23,6 +25,7 @@ export function ChatInterface() {
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
+  const [pendingTransaction, setPendingTransaction] = useState<PrepareMintSVGNFTData | null>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -46,6 +49,24 @@ export function ChatInterface() {
       }
       return newSet;
     });
+  };
+
+  const detectTransactionResponse = (content: string): PrepareMintSVGNFTData | null => {
+    const parsed = JSON.parse(content);
+    if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintSVGNFT') {
+      return parsed as PrepareMintSVGNFTData;
+    }
+    return null;
+  };
+
+  const handleTransactionComplete = (hash: string) => {
+    console.log('Transaction completed:', hash);
+    setPendingTransaction(null);
+  };
+
+  const handleTransactionError = (error: string) => {
+    console.error('Transaction failed:', error);
+    setPendingTransaction(null);
   };
 
   return (
@@ -97,104 +118,133 @@ export function ChatInterface() {
                     </div>
                   )}
 
-                  {messages.map((message) => (
-                    <div key={message.id} className="space-y-2">
-                      <div
-                        className={cn(
-                          'flex items-start gap-3',
-                          message.role === 'user' ? 'justify-end' : 'justify-start'
-                        )}
-                      >
-                        {message.role === 'assistant' && (
-                          <div className="bg-primary flex size-5 flex-shrink-0 items-center justify-center rounded-full sm:size-8">
-                            <Bot className="text-primary-foreground size-3 sm:size-5" />
-                          </div>
-                        )}
+                  {messages.map((message) => {
+                    // Check if this message contains a transaction response
+                    const transaction =
+                      message.role === 'assistant'
+                        ? detectTransactionResponse(message.content)
+                        : null;
 
+                    // If we detect a transaction, set it as pending
+                    if (transaction && !pendingTransaction) {
+                      setPendingTransaction(transaction);
+                    }
+
+                    return (
+                      <div key={message.id} className="space-y-2">
                         <div
                           className={cn(
-                            'rounded-lg p-3',
-                            message.role === 'user'
-                              ? 'bg-primary text-primary-foreground ml-auto max-w-[70vw]'
-                              : 'bg-muted max-w-[60vw]'
+                            'flex items-start gap-3',
+                            message.role === 'user' ? 'justify-end' : 'justify-start'
                           )}
                         >
-                          <div className="prose prose-sm prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 max-w-none break-words [&_img]:max-h-48 [&_img]:max-w-xs [&_img]:object-contain">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {message.content}
-                            </ReactMarkdown>
-                          </div>
+                          {message.role === 'assistant' && (
+                            <div className="bg-primary flex size-5 flex-shrink-0 items-center justify-center rounded-full sm:size-8">
+                              <Bot className="text-primary-foreground size-3 sm:size-5" />
+                            </div>
+                          )}
 
-                          {/* Show tool indicator when tools were used */}
-                          {message.role === 'assistant' &&
-                            message.parts?.some((part) => part.type === 'tool-invocation') && (
-                              <button
-                                onClick={() => toggleMessageExpansion(message.id)}
-                                className="text-muted-foreground hover:text-foreground hover:bg-muted/50 mt-2 -ml-1 flex items-center gap-2 rounded p-1 text-xs transition-colors"
-                              >
-                                {expandedMessages.has(message.id) ? (
-                                  <ChevronDown className="h-3 w-3" />
-                                ) : (
-                                  <ChevronRight className="h-3 w-3" />
-                                )}
-                                <span>
-                                  🔧{' '}
-                                  {
-                                    message.parts.filter((part) => part.type === 'tool-invocation')
-                                      .length
-                                  }{' '}
-                                  tool
-                                  {message.parts.filter((part) => part.type === 'tool-invocation')
-                                    .length > 1
-                                    ? 's'
-                                    : ''}{' '}
-                                  used
-                                </span>
-                              </button>
+                          <div
+                            className={cn(
+                              'rounded-lg p-3',
+                              message.role === 'user'
+                                ? 'bg-primary text-primary-foreground ml-auto max-w-[70vw]'
+                                : 'bg-muted max-w-[60vw]'
                             )}
+                          >
+                            <div className="prose prose-sm prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 max-w-none break-words [&_img]:max-h-48 [&_img]:max-w-xs [&_img]:object-contain">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {message.content}
+                              </ReactMarkdown>
+                            </div>
 
-                          {/* Display tool calls if expanded */}
-                          {expandedMessages.has(message.id) &&
-                            message.parts?.some((part) => part.type === 'tool-invocation') && (
-                              <div className="mt-3 border-t pt-3">
-                                <div className="space-y-3">
-                                  {message.parts
-                                    .filter((part) => part.type === 'tool-invocation')
-                                    .map((part, index) => (
-                                      <div
-                                        key={part.toolInvocation.toolCallId}
-                                        className="space-y-2"
-                                      >
-                                        <div className="text-muted-foreground text-xs font-medium">
-                                          Step {index + 1}: {part.toolInvocation.toolName}
+                            {/* Show tool indicator when tools were used */}
+                            {message.role === 'assistant' &&
+                              message.parts?.some((part) => part.type === 'tool-invocation') && (
+                                <button
+                                  onClick={() => toggleMessageExpansion(message.id)}
+                                  className="text-muted-foreground hover:text-foreground hover:bg-muted/50 mt-2 -ml-1 flex items-center gap-2 rounded p-1 text-xs transition-colors"
+                                >
+                                  {expandedMessages.has(message.id) ? (
+                                    <ChevronDown className="h-3 w-3" />
+                                  ) : (
+                                    <ChevronRight className="h-3 w-3" />
+                                  )}
+                                  <span>
+                                    🔧{' '}
+                                    {
+                                      message.parts.filter(
+                                        (part) => part.type === 'tool-invocation'
+                                      ).length
+                                    }{' '}
+                                    tool
+                                    {message.parts.filter((part) => part.type === 'tool-invocation')
+                                      .length > 1
+                                      ? 's'
+                                      : ''}{' '}
+                                    used
+                                  </span>
+                                </button>
+                              )}
+
+                            {/* Display tool calls if expanded */}
+                            {expandedMessages.has(message.id) &&
+                              message.parts?.some((part) => part.type === 'tool-invocation') && (
+                                <div className="mt-3 border-t pt-3">
+                                  <div className="space-y-3">
+                                    {message.parts
+                                      .filter((part) => part.type === 'tool-invocation')
+                                      .map((part, index) => (
+                                        <div
+                                          key={part.toolInvocation.toolCallId}
+                                          className="space-y-2"
+                                        >
+                                          <div className="text-muted-foreground text-xs font-medium">
+                                            Step {index + 1}: {part.toolInvocation.toolName}
+                                          </div>
+                                          {part.toolInvocation.state === 'result' && (
+                                            <div className="bg-background/50 rounded p-2 text-sm">
+                                              <pre className="overflow-x-auto text-xs whitespace-pre-wrap sm:text-sm">
+                                                {JSON.stringify(
+                                                  part.toolInvocation.result,
+                                                  null,
+                                                  2
+                                                )}
+                                              </pre>
+                                            </div>
+                                          )}
+                                          {part.toolInvocation.state === 'call' && (
+                                            <div className="rounded bg-blue-50 p-2 text-sm text-blue-700">
+                                              Executing tool...
+                                            </div>
+                                          )}
                                         </div>
-                                        {part.toolInvocation.state === 'result' && (
-                                          <div className="bg-background/50 rounded p-2 text-sm">
-                                            <pre className="overflow-x-auto text-xs whitespace-pre-wrap sm:text-sm">
-                                              {JSON.stringify(part.toolInvocation.result, null, 2)}
-                                            </pre>
-                                          </div>
-                                        )}
-                                        {part.toolInvocation.state === 'call' && (
-                                          <div className="rounded bg-blue-50 p-2 text-sm text-blue-700">
-                                            Executing tool...
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
+                                      ))}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                        </div>
-
-                        {message.role === 'user' && (
-                          <div className="bg-muted flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
-                            <User className="h-4 w-4" />
+                              )}
                           </div>
-                        )}
+
+                          {message.role === 'user' && (
+                            <div className="bg-muted flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                              <User className="h-4 w-4" />
+                            </div>
+                          )}
+                        </div>
                       </div>
+                    );
+                  })}
+
+                  {/* Display transaction handler if there's a pending transaction */}
+                  {pendingTransaction && (
+                    <div className="mt-4">
+                      <MintTransactionHandler
+                        transaction={pendingTransaction}
+                        onComplete={handleTransactionComplete}
+                        onError={handleTransactionError}
+                      />
                     </div>
-                  ))}
+                  )}
 
                   {(status === 'submitted' || status === 'streaming') && (
                     <div className="flex items-start gap-3">
@@ -300,5 +350,10 @@ const SUGGESTED_PROMPTS = [
   {
     title: 'Shape Network Status & Information',
     prompt: 'Get the current Shape Network status and RPC information',
+  },
+  {
+    title: 'Mint SVG NFT',
+    prompt:
+      'Create an SVG NFT for me with a simple black circle design, name it "My First Shape NFT" and mint it to my wallet',
   },
 ];
