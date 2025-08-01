@@ -39,6 +39,45 @@ export function ChatInterface() {
     }
   }, [messages]);
 
+  // Detect transaction responses in messages
+  useEffect(() => {
+    if (pendingTransaction) return; // Don't override existing pending transaction
+
+    for (const message of messages) {
+      if (message.role === 'assistant') {
+        // First check the message content
+        let transaction = detectTransactionResponse(message.content);
+        
+        // If not found in content, check tool results
+        if (!transaction && message.parts) {
+          for (const part of message.parts) {
+            if (part.type === 'tool-invocation' && 
+                part.toolInvocation.state === 'result' &&
+                part.toolInvocation.toolName === 'prepareMintSVGNFT') {
+              try {
+                const toolResult = part.toolInvocation.result;
+                if (toolResult?.content?.[0]?.text) {
+                  const parsed = JSON.parse(toolResult.content[0].text);
+                  if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
+                    transaction = parsed as PrepareMintSVGNFTData;
+                    break;
+                  }
+                }
+              } catch {
+                // Ignore parsing errors
+              }
+            }
+          }
+        }
+
+        if (transaction) {
+          setPendingTransaction(transaction);
+          break; // Only set the first transaction found
+        }
+      }
+    }
+  }, [messages, pendingTransaction]);
+
   const toggleMessageExpansion = (messageId: string) => {
     setExpandedMessages((prev) => {
       const newSet = new Set(prev);
@@ -52,9 +91,41 @@ export function ChatInterface() {
   };
 
   const detectTransactionResponse = (content: string): PrepareMintSVGNFTData | null => {
-    const parsed = JSON.parse(content);
-    if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
-      return parsed as PrepareMintSVGNFTData;
+    try {
+      // First try parsing the content directly as JSON
+      const parsed = JSON.parse(content);
+      if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
+        return parsed as PrepareMintSVGNFTData;
+      }
+    } catch {
+      // If that fails, try to extract JSON from markdown code blocks
+      const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
+      const match = content.match(jsonBlockRegex);
+      if (match) {
+        try {
+          const parsed = JSON.parse(match[1]);
+          if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
+            return parsed as PrepareMintSVGNFTData;
+          }
+        } catch {
+          // Ignore parsing errors
+        }
+      }
+
+      // Try to find JSON object within the text
+      const jsonRegex =
+        /\{[\s\S]*"success"\s*:\s*true[\s\S]*"transaction"[\s\S]*"mintNFT"[\s\S]*\}/;
+      const jsonMatch = content.match(jsonRegex);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
+            return parsed as PrepareMintSVGNFTData;
+          }
+        } catch {
+          // Ignore parsing errors
+        }
+      }
     }
     return null;
   };
@@ -119,16 +190,6 @@ export function ChatInterface() {
                   )}
 
                   {messages.map((message) => {
-                    // Check if this message contains a transaction response
-                    const transaction =
-                      message.role === 'assistant'
-                        ? detectTransactionResponse(message.content)
-                        : null;
-
-                    // If we detect a transaction, set it as pending
-                    if (transaction && !pendingTransaction) {
-                      setPendingTransaction(transaction);
-                    }
 
                     return (
                       <div key={message.id} className="space-y-2">
