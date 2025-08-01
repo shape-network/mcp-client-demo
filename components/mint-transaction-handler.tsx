@@ -31,11 +31,11 @@ export function MintTransactionHandler({
       console.log('🔗 Storing transaction hash:', hash);
       setStoredHash(hash);
     }
-  }, [hash, storedHash]);
+  }, [hash]);
 
   // Use stored hash for receipt monitoring
   const finalHash = storedHash || hash;
-  
+
   const {
     data: receipt,
     isSuccess,
@@ -53,7 +53,7 @@ export function MintTransactionHandler({
       console.log('🎉 Transaction successful! Hash:', finalHash);
       onComplete?.(finalHash);
     }
-  }, [isSuccess, receipt, finalHash, onComplete]);
+  }, [isSuccess, receipt, finalHash]);
 
   // Handle transaction errors
   useEffect(() => {
@@ -61,7 +61,7 @@ export function MintTransactionHandler({
       console.error('Write contract error:', writeError);
       onError?.(writeError.message);
     }
-  }, [writeError, onError]);
+  }, [writeError]);
 
   // Handle receipt errors
   useEffect(() => {
@@ -69,7 +69,7 @@ export function MintTransactionHandler({
       console.error('Receipt error:', receiptErrorDetails);
       onError?.(receiptErrorDetails.message || 'Transaction failed - please try again');
     }
-  }, [receiptError, receiptErrorDetails, onError]);
+  }, [receiptError, receiptErrorDetails]);
 
   // Fallback timeout for stuck transactions
   useEffect(() => {
@@ -369,7 +369,7 @@ export function MintTransactionHandler({
                   This usually takes 10-30 seconds on Shape Sepolia
                 </p>
                 <div className="pt-2">
-                  <div className="flex gap-2 justify-center">
+                  <div className="flex justify-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -383,7 +383,8 @@ export function MintTransactionHandler({
                       size="sm"
                       onClick={() => {
                         // Try to get hash from the console logs - look for the actual transaction hash
-                        const actualHash = '0xfefef32f78754ee2c955e49c31f64439617301eed1439d0893c3f90f1b56d'; // From console
+                        const actualHash =
+                          '0xfefef32f78754ee2c955e49c31f64439617301eed1439d0893c3f90f1b56d'; // From console
                         console.log('Manual success trigger - Using hash:', actualHash);
                         onComplete?.(actualHash);
                       }}

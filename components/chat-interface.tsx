@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import type { PrepareMintSVGNFTData } from '@/types';
 import { useChat } from '@ai-sdk/react';
 import { Bot, ChevronDown, ChevronRight, Info, Send, User, Wallet } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAccount } from 'wagmi';
@@ -29,15 +29,19 @@ export function ChatInterface() {
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector(
-        '[data-radix-scroll-area-viewport]'
-      );
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    const timeoutId = setTimeout(() => {
+      if (scrollAreaRef.current) {
+        const scrollContainer = scrollAreaRef.current.querySelector(
+          '[data-radix-scroll-area-viewport]'
+        );
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
       }
-    }
-  }, [messages]);
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [messages.length]);
 
   // Detect transaction responses in messages
   useEffect(() => {
@@ -47,18 +51,24 @@ export function ChatInterface() {
       if (message.role === 'assistant') {
         // First check the message content
         let transaction = detectTransactionResponse(message.content);
-        
+
         // If not found in content, check tool results
         if (!transaction && message.parts) {
           for (const part of message.parts) {
-            if (part.type === 'tool-invocation' && 
-                part.toolInvocation.state === 'result' &&
-                part.toolInvocation.toolName === 'prepareMintSVGNFT') {
+            if (
+              part.type === 'tool-invocation' &&
+              part.toolInvocation.state === 'result' &&
+              part.toolInvocation.toolName === 'prepareMintSVGNFT'
+            ) {
               try {
                 const toolResult = part.toolInvocation.result;
                 if (toolResult?.content?.[0]?.text) {
                   const parsed = JSON.parse(toolResult.content[0].text);
-                  if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
+                  if (
+                    parsed.success &&
+                    parsed.transaction &&
+                    parsed.metadata?.functionName === 'mintNFT'
+                  ) {
                     transaction = parsed as PrepareMintSVGNFTData;
                     break;
                   }
@@ -92,53 +102,41 @@ export function ChatInterface() {
 
   const detectTransactionResponse = (content: string): PrepareMintSVGNFTData | null => {
     try {
-      // First try parsing the content directly as JSON
       const parsed = JSON.parse(content);
       if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
         return parsed as PrepareMintSVGNFTData;
       }
     } catch {
-      // If that fails, try to extract JSON from markdown code blocks
       const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
       const match = content.match(jsonBlockRegex);
       if (match) {
-        try {
-          const parsed = JSON.parse(match[1]);
-          if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
-            return parsed as PrepareMintSVGNFTData;
-          }
-        } catch {
-          // Ignore parsing errors
+        const parsed = JSON.parse(match[1]);
+        if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
+          return parsed as PrepareMintSVGNFTData;
         }
       }
-
-      // Try to find JSON object within the text
       const jsonRegex =
         /\{[\s\S]*"success"\s*:\s*true[\s\S]*"transaction"[\s\S]*"mintNFT"[\s\S]*\}/;
       const jsonMatch = content.match(jsonRegex);
       if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
-            return parsed as PrepareMintSVGNFTData;
-          }
-        } catch {
-          // Ignore parsing errors
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
+          return parsed as PrepareMintSVGNFTData;
         }
       }
     }
     return null;
   };
 
-  const handleTransactionComplete = (hash: string) => {
+  const handleTransactionComplete = useCallback((hash: string) => {
     console.log('Transaction completed:', hash);
     setPendingTransaction(null);
-  };
+  }, []);
 
-  const handleTransactionError = (error: string) => {
+  const handleTransactionError = useCallback((error: string) => {
     console.error('Transaction failed:', error);
     setPendingTransaction(null);
-  };
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">
@@ -190,6 +188,46 @@ export function ChatInterface() {
                   )}
 
                   {messages.map((message) => {
+                    // Check if this message contains a transaction response
+                    let transaction: PrepareMintSVGNFTData | null = null;
+
+                    if (message.role === 'assistant') {
+                      // First check the message content
+                      transaction = detectTransactionResponse(message.content);
+
+                      // If not found in content, check tool results
+                      if (!transaction && message.parts) {
+                        for (const part of message.parts) {
+                          if (
+                            part.type === 'tool-invocation' &&
+                            part.toolInvocation.state === 'result' &&
+                            part.toolInvocation.toolName === 'prepareMintSVGNFT'
+                          ) {
+                            try {
+                              const toolResult = part.toolInvocation.result;
+                              if (toolResult?.content?.[0]?.text) {
+                                const parsed = JSON.parse(toolResult.content[0].text);
+                                if (
+                                  parsed.success &&
+                                  parsed.transaction &&
+                                  parsed.metadata?.functionName === 'mintNFT'
+                                ) {
+                                  transaction = parsed as PrepareMintSVGNFTData;
+                                  break;
+                                }
+                              }
+                            } catch {
+                              // Ignore parsing errors
+                            }
+                          }
+                        }
+                      }
+                    }
+
+                    // If we detect a transaction, set it as pending
+                    if (transaction && !pendingTransaction) {
+                      setPendingTransaction(transaction);
+                    }
 
                     return (
                       <div key={message.id} className="space-y-2">
