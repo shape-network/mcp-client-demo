@@ -106,3 +106,27 @@ export type StackAchievementsData = {
     claimedAt: string;
   } | null;
 };
+
+export type TransactionData = {
+  to: string;
+  data: string;
+  value: string;
+};
+
+export type PrepareMintSVGNFTData = {
+  success: boolean;
+  transaction: TransactionData;
+  metadata: {
+    contractAddress: string;
+    functionName: string;
+    recipientAddress: string;
+    tokenURI: string;
+    nftMetadata: Record<string, unknown>;
+    estimatedGas: string;
+    chainId: number;
+    explorerUrl: string;
+  };
+  instructions: {
+    nextSteps: string[];
+  };
+};
