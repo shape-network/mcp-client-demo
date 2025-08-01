@@ -53,7 +53,7 @@ export function ChatInterface() {
 
   const detectTransactionResponse = (content: string): PrepareMintSVGNFTData | null => {
     const parsed = JSON.parse(content);
-    if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintSVGNFT') {
+    if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
       return parsed as PrepareMintSVGNFTData;
     }
     return null;
