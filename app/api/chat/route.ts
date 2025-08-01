@@ -1,5 +1,5 @@
 import { config } from '@/lib/config';
-import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { experimental_createMCPClient, streamText } from 'ai';
 
@@ -18,9 +18,10 @@ export async function POST(req: Request) {
   const tools = await mcpClient.tools();
 
   const result = await streamText({
-    model: openai('gpt-4o'),
+    model: anthropic('claude-sonnet-4-latest'),
+    sendReasoning: false,
+    messages: [...messages, { type: 'text', text: 'Explain the error message.' }],
     tools,
-    messages,
     maxSteps: 5, // Allow up to 5 sequential tool calls
     system: `You are a helpful assistant for Shape Network blockchain data and Web3 operations.
 
