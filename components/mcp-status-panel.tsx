@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMcpServerStatus } from '@/hooks/use-mcp';
+import { config } from '@/lib/config';
 import { cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw, XCircle } from 'lucide-react';
 
@@ -103,9 +104,7 @@ export function McpStatusPanel() {
             </>
           )}
           {serverStatus === 'disconnected' && (
-            <span>
-              Ensure the MCP server is accessible at https://shape-mcp-server.vercel.app/mcp
-            </span>
+            <span>Ensure the MCP server is accessible at {config.mcpServerUrl}</span>
           )}
           {serverStatus === 'unknown' && <span>Establishing connection...</span>}
         </CardDescription>
@@ -118,7 +117,7 @@ export function McpStatusPanel() {
             <AlertDescription className="text-yellow-800">
               The MCP server appears to be offline. Make sure it&apos;s accessible at{' '}
               <code className="rounded bg-yellow-100 px-1 py-0.5 text-xs">
-                https://shape-mcp-server.vercel.app/mcp
+                {config.mcpServerUrl}
               </code>
             </AlertDescription>
           </Alert>

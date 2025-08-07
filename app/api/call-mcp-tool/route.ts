@@ -55,8 +55,7 @@ export async function POST(request: NextRequest) {
     console.error('Error calling XMCP tool:', error);
     return NextResponse.json(
       {
-        error:
-          'Failed to call MCP tool. Make sure the MCP server is reachable at http://localhost:3002/mcp.',
+        error: `Failed to call MCP tool. Make sure the MCP server is reachable at ${config.mcpServerUrl}.`,
       },
       { status: 500 }
     );
@@ -74,7 +73,7 @@ export async function GET() {
       params: {},
     };
 
-    const mcpResponse = await fetch('http://localhost:3002/mcp', {
+    const mcpResponse = await fetch(config.mcpServerUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -98,7 +97,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: 'MCP server is not reachable. Make sure http://localhost:3002/mcp is accessible.',
+        error: `MCP server is not reachable. Make sure ${config.mcpServerUrl} is accessible.`,
       },
       { status: 503 }
     );
