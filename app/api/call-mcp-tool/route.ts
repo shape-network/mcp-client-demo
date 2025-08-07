@@ -1,3 +1,4 @@
+import { config } from '@/lib/config';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Call the XMCP server
-    const mcpResponse = await fetch('https://shape-mcp-server.vercel.app/mcp', {
+    const mcpResponse = await fetch(config.mcpServerUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -53,7 +54,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error calling XMCP tool:', error);
     return NextResponse.json(
-      { error: 'Failed to call MCP tool. Make sure the MCP server is reachable at https://shape-mcp-server.vercel.app/mcp.' },
+      {
+        error:
+          'Failed to call MCP tool. Make sure the MCP server is reachable at http://localhost:3002/mcp.',
+      },
       { status: 500 }
     );
   }
@@ -70,7 +74,7 @@ export async function GET() {
       params: {},
     };
 
-    const mcpResponse = await fetch('https://shape-mcp-server.vercel.app/mcp', {
+    const mcpResponse = await fetch('http://localhost:3002/mcp', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -94,7 +98,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: "MCP server is not reachable. Make sure https://shape-mcp-server.vercel.app/mcp is accessible.",
+        error: 'MCP server is not reachable. Make sure http://localhost:3002/mcp is accessible.',
       },
       { status: 503 }
     );

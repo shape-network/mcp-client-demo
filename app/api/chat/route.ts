@@ -1,3 +1,4 @@
+import { config } from '@/lib/config';
 import { openai } from '@ai-sdk/openai';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { experimental_createMCPClient, streamText } from 'ai';
@@ -8,7 +9,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   // Connect to deployed MCP server
-  const url = new URL('https://shape-mcp-server.vercel.app/mcp'); // or http://localhost:3002/mcp for local
+  const url = new URL(config.mcpServerUrl);
   const mcpClient = await experimental_createMCPClient({
     transport: new StreamableHTTPClientTransport(url),
   });
