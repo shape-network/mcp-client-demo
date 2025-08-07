@@ -8,20 +8,18 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  // Connect to deployed MCP server
   const url = new URL(config.mcpServerUrl);
   const mcpClient = await experimental_createMCPClient({
     transport: new StreamableHTTPClientTransport(url),
   });
 
-  // Get tools
   const tools = await mcpClient.tools();
 
   const result = await streamText({
     model: openai('gpt-4o'),
     tools,
     messages,
-    maxSteps: 5, // Allow up to 5 sequential tool calls
+    maxSteps: 5,
     system: `You are a helpful assistant for Shape Network blockchain data and Web3 operations.
 
 You have access to multiple tools that can be chained together to provide comprehensive answers:

@@ -174,7 +174,7 @@ export function ChatInterface() {
             </div>
           ) : (
             <>
-              <ScrollArea ref={scrollAreaRef} className="h-[400px] pr-4 sm:h-[500px]">
+              <ScrollArea ref={scrollAreaRef} className="h-[400px] pr-4 sm:h-[720px]">
                 <div className="space-y-4">
                   {messages.length === 0 && (
                     <div className="text-muted-foreground py-8 text-center">
