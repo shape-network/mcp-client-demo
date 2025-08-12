@@ -3,7 +3,7 @@ import { McpStatusPanel } from '@/components/mcp-status-panel';
 
 export default function Home() {
   return (
-    <div className="flex min-h-[calc(100vh-200px)] flex-col justify-start gap-6">
+    <div className="mx-auto flex min-h-[calc(100vh-200px)] max-w-7xl flex-col justify-start gap-6">
       <ChatInterface />
       <McpStatusPanel />
     </div>
