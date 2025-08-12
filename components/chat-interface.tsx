@@ -1,18 +1,31 @@
 'use client';
 
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import {
+  PromptInput,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from '@/components/ai-elements/prompt-input';
+import { Response } from '@/components/ai-elements/response';
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from '@/components/ai-elements/tool';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
 import type { PrepareMintSVGNFTData } from '@/types';
 import { useChat } from '@ai-sdk/react';
-import { Bot, ChevronDown, ChevronRight, Info, Send, User, Wallet } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { Bot, Info, Wallet } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { MintTransactionHandler } from './mint-transaction-handler';
 
@@ -21,8 +34,6 @@ export function ChatInterface() {
   const [input, setInput] = useState('');
   const { messages, sendMessage, status, error } = useChat();
 
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
   const [pendingTransaction, setPendingTransaction] = useState<PrepareMintSVGNFTData | null>(null);
 
   const getMessageTextContent = useCallback(
@@ -82,34 +93,6 @@ export function ChatInterface() {
     console.error('Transaction failed:', error);
     setPendingTransaction(null);
   }, []);
-
-  const toggleMessageExpansion = (messageId: string) => {
-    setExpandedMessages((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(messageId)) {
-        newSet.delete(messageId);
-      } else {
-        newSet.add(messageId);
-      }
-      return newSet;
-    });
-  };
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (scrollAreaRef.current) {
-        const scrollContainer = scrollAreaRef.current.querySelector(
-          '[data-radix-scroll-area-viewport]'
-        );
-        if (scrollContainer) {
-          scrollContainer.scrollTop = scrollContainer.scrollHeight;
-        }
-      }
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [messages.length]);
 
   // Detect transaction responses in messages
   useEffect(() => {
@@ -193,8 +176,8 @@ export function ChatInterface() {
             </div>
           ) : (
             <>
-              <ScrollArea ref={scrollAreaRef} className="h-[400px] pr-4 sm:h-[720px]">
-                <div className="space-y-4">
+              <Conversation className="h-[400px] sm:h-[720px]">
+                <ConversationContent className="space-y-4">
                   {messages.length === 0 && (
                     <div className="text-muted-foreground py-8 text-center">
                       <Bot className="mx-auto mb-2 h-12 w-12 opacity-50" />
@@ -250,109 +233,46 @@ export function ChatInterface() {
                     }
 
                     return (
-                      <div key={message.id} className="space-y-2">
-                        <div
-                          className={cn(
-                            'flex items-start gap-3',
-                            message.role === 'user' ? 'justify-end' : 'justify-start'
-                          )}
-                        >
-                          {message.role === 'assistant' && (
-                            <div className="bg-primary flex size-5 flex-shrink-0 items-center justify-center rounded-full sm:size-8">
-                              <Bot className="text-primary-foreground size-3 sm:size-5" />
-                            </div>
-                          )}
+                      <Message key={message.id} from={message.role}>
+                        <MessageContent>
+                          <Response>{getMessageTextContent(message)}</Response>
 
-                          <div
-                            className={cn(
-                              'rounded-lg p-3',
-                              message.role === 'user'
-                                ? 'bg-primary text-primary-foreground ml-auto max-w-[70vw]'
-                                : 'bg-muted max-w-[60vw]'
-                            )}
-                          >
-                            <div className="prose prose-sm prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 max-w-none break-words [&_img]:max-h-48 [&_img]:max-w-xs [&_img]:object-contain">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {getMessageTextContent(message)}
-                              </ReactMarkdown>
-                            </div>
-
-                            {/* Show tool indicator when tools were used */}
-                            {message.role === 'assistant' &&
-                              message.parts?.some((part) => part.type?.startsWith('tool-')) && (
-                                <button
-                                  onClick={() => toggleMessageExpansion(message.id)}
-                                  className="text-muted-foreground hover:text-foreground hover:bg-muted/50 mt-2 -ml-1 flex items-center gap-2 rounded p-1 text-xs transition-colors"
+                          {/* Tool calls using AI Elements Tool component */}
+                          {message.role === 'assistant' &&
+                            message.parts
+                              ?.filter((part) => part.type?.startsWith('tool-'))
+                              .map((part, index) => (
+                                <Tool
+                                  key={('toolCallId' in part ? part.toolCallId : null) || index}
+                                  defaultOpen={false}
                                 >
-                                  {expandedMessages.has(message.id) ? (
-                                    <ChevronDown className="h-3 w-3" />
-                                  ) : (
-                                    <ChevronRight className="h-3 w-3" />
-                                  )}
-                                  <span>
-                                    🔧{' '}
-                                    {
-                                      message.parts.filter((part) => part.type?.startsWith('tool-'))
-                                        .length
-                                    }{' '}
-                                    tool
-                                    {message.parts.filter((part) => part.type?.startsWith('tool-'))
-                                      .length > 1
-                                      ? 's'
-                                      : ''}{' '}
-                                    used
-                                  </span>
-                                </button>
-                              )}
-
-                            {/* Display tool calls if expanded */}
-                            {expandedMessages.has(message.id) &&
-                              message.parts?.some((part) => part.type?.startsWith('tool-')) && (
-                                <div className="mt-3 border-t pt-3">
-                                  <div className="space-y-3">
-                                    {message.parts
-                                      .filter((part) => part.type?.startsWith('tool-'))
-                                      .map((part, index) => (
-                                        <div
-                                          key={
-                                            ('toolCallId' in part ? part.toolCallId : null) || index
+                                  <ToolHeader
+                                    type={(part.type?.startsWith('tool-') ? part.type : 'tool-unknown') as `tool-${string}`}
+                                    state={
+                                      ('state' in part && part.state) ? part.state as 'input-streaming' | 'input-available' | 'output-available' | 'output-error' : 'input-streaming'
+                                    }
+                                  />
+                                  <ToolContent>
+                                    {'input' in part && <ToolInput input={part.input} />}
+                                    {'output' in part &&
+                                      'state' in part &&
+                                      part.state === 'output-available' && (
+                                        <ToolOutput
+                                          output={
+                                            typeof part.output === 'string'
+                                              ? part.output
+                                              : JSON.stringify(part.output, null, 2)
                                           }
-                                          className="space-y-2"
-                                        >
-                                          <div className="text-muted-foreground text-xs font-medium">
-                                            Step {index + 1}:{' '}
-                                            {part.type?.replace('tool-', '') || 'Unknown Tool'}
-                                          </div>
-                                          {'state' in part &&
-                                            part.state === 'output-available' &&
-                                            'output' in part && (
-                                              <div className="bg-background/50 rounded p-2 text-sm">
-                                                <pre className="overflow-x-auto text-xs whitespace-pre-wrap sm:text-sm">
-                                                  {typeof part.output === 'string'
-                                                    ? part.output
-                                                    : JSON.stringify(part.output, null, 2)}
-                                                </pre>
-                                              </div>
-                                            )}
-                                          {'state' in part && part.state === 'input-streaming' && (
-                                            <div className="rounded bg-blue-50 p-2 text-sm text-blue-700">
-                                              Executing tool...
-                                            </div>
-                                          )}
-                                        </div>
-                                      ))}
-                                  </div>
-                                </div>
-                              )}
-                          </div>
-
-                          {message.role === 'user' && (
-                            <div className="bg-muted flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
-                              <User className="h-4 w-4" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                                          errorText={
+                                            'errorText' in part ? part.errorText : undefined
+                                          }
+                                        />
+                                      )}
+                                  </ToolContent>
+                                </Tool>
+                              ))}
+                        </MessageContent>
+                      </Message>
                     );
                   })}
 
@@ -390,10 +310,11 @@ export function ChatInterface() {
                       </div>
                     </div>
                   )}
-                </div>
-              </ScrollArea>
+                </ConversationContent>
+                <ConversationScrollButton />
+              </Conversation>
 
-              <Separator />
+              <div className="my-4 border-t" />
 
               {error && (
                 <div className="bg-destructive/10 text-destructive mb-4 rounded p-3">
@@ -435,7 +356,7 @@ export function ChatInterface() {
                 </div>
               )}
 
-              <form
+              <PromptInput
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (input.trim()) {
@@ -443,23 +364,17 @@ export function ChatInterface() {
                     setInput('');
                   }
                 }}
-                className="flex gap-2"
               >
-                <Input
+                <PromptInputTextarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask about a Shape collection, or how much gasback you can earn"
-                  disabled={status === 'submitted' || status === 'streaming'}
-                  className="flex-1 text-sm sm:text-base"
+                  disabled={status !== 'ready'}
+                  minHeight={48}
+                  maxHeight={120}
                 />
-                <Button
-                  type="submit"
-                  disabled={status === 'submitted' || status === 'streaming' || !input.trim()}
-                  className="flex-shrink-0"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
+                <PromptInputSubmit status={status} disabled={status !== 'ready' || !input.trim()} />
+              </PromptInput>
             </>
           )}
         </CardContent>
