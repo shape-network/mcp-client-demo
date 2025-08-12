@@ -21,7 +21,6 @@ import {
 } from '@/components/ai-elements/tool';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { PrepareMintSVGNFTData } from '@/types';
 import { useChat } from '@ai-sdk/react';
 import { Bot, Info, Wallet } from 'lucide-react';
@@ -141,221 +140,214 @@ export function ChatInterface() {
   }, [messages, pendingTransaction, detectTransactionResponse]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Demo Mode (rate limited):</strong> Click on assistant responses that used tools to
-          expand and view the tool calls and raw responses.
-        </AlertDescription>
-      </Alert>
+    <div className="relative mx-auto size-full h-screen max-w-4xl p-6">
+      <div className="flex h-full flex-col">
+        <Alert className="mb-4">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Demo Mode (rate limited):</strong> Click on assistant responses that used tools
+            to expand and view the tool calls and raw responses.
+          </AlertDescription>
+        </Alert>
 
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5" />
-            Shape Chat Assistant
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!isConnected ? (
-            <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4 text-center">
-              <Wallet className="h-16 w-16 text-gray-300" />
+        {!isConnected ? (
+          <div className="flex h-full items-center justify-center">
+            <div className="space-y-4 text-center">
+              <Wallet className="text-muted-foreground mx-auto h-12 w-12" />
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Connect Your Wallet</h3>
-                <p className="text-muted-foreground max-w-md">
+                <p className="text-muted-foreground">
                   Please connect your wallet to use the Shape AI chatbot.
                 </p>
               </div>
-              <Alert className="max-w-md">
-                <AlertDescription>
-                  Click the &quot;Connect Wallet&quot; button in the top right corner to get
-                  started.
-                </AlertDescription>
-              </Alert>
             </div>
-          ) : (
-            <>
-              <Conversation className="h-[400px] sm:h-[720px]">
-                <ConversationContent className="space-y-4">
-                  {messages.length === 0 && (
-                    <div className="text-muted-foreground py-8 text-center">
-                      <Bot className="mx-auto mb-2 h-12 w-12 opacity-50" />
-                      <p>Start a conversation with the Shape assistant!</p>
-                      <p className="mt-1 text-sm">
-                        Try asking about Shape Network data, how much gasback you can earn or
-                        analytics for a given collection.
-                      </p>
+          </div>
+        ) : (
+          <>
+            <Conversation className="relative w-full flex-1" style={{ minHeight: '400px' }}>
+              <ConversationContent>
+                {messages.length === 0 && (
+                  <div className="flex h-full items-center justify-center">
+                    <div className="space-y-4 text-center">
+                      <Bot className="text-muted-foreground mx-auto h-12 w-12" />
+                      <div className="space-y-2">
+                        <p className="text-lg font-medium">
+                          Start a conversation with the Shape assistant!
+                        </p>
+                        <p className="text-muted-foreground">
+                          Try asking about Shape Network data, how much gasback you can earn or
+                          analytics for a given collection.
+                        </p>
+                      </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {messages.map((message) => {
-                    // Check if this message contains a transaction response
-                    let transaction: PrepareMintSVGNFTData | null = null;
+                {messages.map((message) => {
+                  // Check if this message contains a transaction response
+                  let transaction: PrepareMintSVGNFTData | null = null;
 
-                    if (message.role === 'assistant') {
-                      // First check the message content
-                      transaction = detectTransactionResponse(message);
+                  if (message.role === 'assistant') {
+                    // First check the message content
+                    transaction = detectTransactionResponse(message);
 
-                      // If not found in content, check tool results
-                      if (!transaction && message.parts) {
-                        for (const part of message.parts) {
-                          if (
-                            part.type?.startsWith('tool-') &&
-                            'state' in part &&
-                            part.state === 'output-available' &&
-                            part.type === 'tool-prepareMintSVGNFT'
-                          ) {
-                            try {
-                              const toolResult = 'output' in part ? part.output : null;
-                              if (typeof toolResult === 'string') {
-                                const parsed = JSON.parse(toolResult);
-                                if (
-                                  parsed.success &&
-                                  parsed.transaction &&
-                                  parsed.metadata?.functionName === 'mintNFT'
-                                ) {
-                                  transaction = parsed as PrepareMintSVGNFTData;
-                                  break;
-                                }
+                    // If not found in content, check tool results
+                    if (!transaction && message.parts) {
+                      for (const part of message.parts) {
+                        if (
+                          part.type?.startsWith('tool-') &&
+                          'state' in part &&
+                          part.state === 'output-available' &&
+                          part.type === 'tool-prepareMintSVGNFT'
+                        ) {
+                          try {
+                            const toolResult = 'output' in part ? part.output : null;
+                            if (typeof toolResult === 'string') {
+                              const parsed = JSON.parse(toolResult);
+                              if (
+                                parsed.success &&
+                                parsed.transaction &&
+                                parsed.metadata?.functionName === 'mintNFT'
+                              ) {
+                                transaction = parsed as PrepareMintSVGNFTData;
+                                break;
                               }
-                            } catch {
-                              // Ignore parsing errors
                             }
+                          } catch {
+                            // Ignore parsing errors
                           }
                         }
                       }
                     }
+                  }
 
-                    // If we detect a transaction, set it as pending
-                    if (transaction && !pendingTransaction) {
-                      setPendingTransaction(transaction);
-                    }
+                  // If we detect a transaction, set it as pending
+                  if (transaction && !pendingTransaction) {
+                    setPendingTransaction(transaction);
+                  }
 
-                    return (
-                      <Message key={message.id} from={message.role}>
-                        <MessageContent>
-                          <Response>{getMessageTextContent(message)}</Response>
+                  return (
+                    <Message key={message.id} from={message.role}>
+                      <MessageContent>
+                        {message.parts?.map((part, i) => {
+                          switch (part.type) {
+                            case 'text':
+                              return <Response key={`${message.id}-${i}`}>{part.text}</Response>;
+                            default:
+                              // Handle all tool calls
+                              if (part.type?.startsWith('tool-')) {
+                                return (
+                                  <Tool key={`${message.id}-${i}`} defaultOpen={false}>
+                                    <ToolHeader
+                                      type={part.type as `tool-${string}`}
+                                      state={
+                                        'state' in part && part.state
+                                          ? (part.state as
+                                              | 'input-streaming'
+                                              | 'input-available'
+                                              | 'output-available'
+                                              | 'output-error')
+                                          : 'input-streaming'
+                                      }
+                                    />
+                                    <ToolContent>
+                                      {'input' in part && <ToolInput input={part.input} />}
+                                      {'output' in part &&
+                                        'state' in part &&
+                                        part.state === 'output-available' && (
+                                          <ToolOutput
+                                            output={
+                                              typeof part.output === 'string'
+                                                ? part.output
+                                                : JSON.stringify(part.output, null, 2)
+                                            }
+                                            errorText={
+                                              'errorText' in part ? part.errorText : undefined
+                                            }
+                                          />
+                                        )}
+                                    </ToolContent>
+                                  </Tool>
+                                );
+                              }
+                              return null;
+                          }
+                        })}
+                      </MessageContent>
+                    </Message>
+                  );
+                })}
 
-                          {/* Tool calls using AI Elements Tool component */}
-                          {message.role === 'assistant' &&
-                            message.parts
-                              ?.filter((part) => part.type?.startsWith('tool-'))
-                              .map((part, index) => (
-                                <Tool
-                                  key={('toolCallId' in part ? part.toolCallId : null) || index}
-                                  defaultOpen={false}
-                                >
-                                  <ToolHeader
-                                    type={(part.type?.startsWith('tool-') ? part.type : 'tool-unknown') as `tool-${string}`}
-                                    state={
-                                      ('state' in part && part.state) ? part.state as 'input-streaming' | 'input-available' | 'output-available' | 'output-error' : 'input-streaming'
-                                    }
-                                  />
-                                  <ToolContent>
-                                    {'input' in part && <ToolInput input={part.input} />}
-                                    {'output' in part &&
-                                      'state' in part &&
-                                      part.state === 'output-available' && (
-                                        <ToolOutput
-                                          output={
-                                            typeof part.output === 'string'
-                                              ? part.output
-                                              : JSON.stringify(part.output, null, 2)
-                                          }
-                                          errorText={
-                                            'errorText' in part ? part.errorText : undefined
-                                          }
-                                        />
-                                      )}
-                                  </ToolContent>
-                                </Tool>
-                              ))}
-                        </MessageContent>
-                      </Message>
-                    );
-                  })}
-
-                  {/* Display transaction handler if there's a pending transaction */}
-                  {pendingTransaction && (
-                    <div className="mt-4">
-                      <MintTransactionHandler
-                        transaction={pendingTransaction}
-                        onComplete={handleTransactionComplete}
-                        onError={handleTransactionError}
-                      />
-                    </div>
-                  )}
-
-                  {(status === 'submitted' || status === 'streaming') && (
-                    <div className="flex items-start gap-3">
-                      <div className="bg-primary flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
-                        <Bot className="text-primary-foreground h-4 w-4 animate-pulse" />
+                {status === 'streaming' && (
+                  <Message from="assistant">
+                    <MessageContent>
+                      <div className="flex items-center space-x-2">
+                        <div className="bg-muted h-2 w-2 animate-pulse rounded-full" />
+                        <div
+                          className="bg-muted h-2 w-2 animate-pulse rounded-full"
+                          style={{ animationDelay: '0.2s' }}
+                        />
+                        <div
+                          className="bg-muted h-2 w-2 animate-pulse rounded-full"
+                          style={{ animationDelay: '0.4s' }}
+                        />
+                        <span className="text-muted-foreground ml-2 text-sm">Thinking...</span>
                       </div>
-                      <div className="bg-muted rounded-lg p-3">
-                        <div className="flex items-center gap-1">
-                          <div
-                            className="bg-muted-foreground h-2 w-2 animate-bounce rounded-full"
-                            style={{ animationDelay: '0ms' }}
-                          />
-                          <div
-                            className="bg-muted-foreground h-2 w-2 animate-bounce rounded-full"
-                            style={{ animationDelay: '150ms' }}
-                          />
-                          <div
-                            className="bg-muted-foreground h-2 w-2 animate-bounce rounded-full"
-                            style={{ animationDelay: '300ms' }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </ConversationContent>
-                <ConversationScrollButton />
-              </Conversation>
+                    </MessageContent>
+                  </Message>
+                )}
 
-              <div className="my-4 border-t" />
-
-              {error && (
-                <div className="bg-destructive/10 text-destructive mb-4 rounded p-3">
-                  <p className="font-medium">
-                    {error.message.includes('429') || error.message.includes('rate limit')
-                      ? 'Rate Limit Exceeded'
-                      : 'Something went wrong'}
-                  </p>
-                  <p className="text-sm">
-                    {error.message.includes('429') || error.message.includes('rate limit')
-                      ? "To prevent abuse of API keys, we've set a rate limit. Please wait a moment before trying again."
-                      : error.message}
-                  </p>
-                </div>
-              )}
-
-              {/* Suggested prompts - only show when no messages */}
-              {messages.length === 0 && (
-                <div className="mb-4 space-y-2">
-                  <p className="text-muted-foreground text-sm">Try these examples:</p>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    {SUGGESTED_PROMPTS.map((suggestion) => (
-                      <Button
-                        key={suggestion.title}
-                        variant="outline"
-                        onClick={() => setInput(suggestion.prompt)}
-                        disabled={status === 'submitted' || status === 'streaming'}
-                        className="h-auto justify-start p-3 text-left"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium">{suggestion.title}</div>
-                          <div className="text-muted-foreground mt-1 line-clamp-3 text-xs break-words">
-                            {suggestion.prompt}
-                          </div>
-                        </div>
-                      </Button>
-                    ))}
+                {/* Display transaction handler if there's a pending transaction */}
+                {pendingTransaction && (
+                  <div className="mt-4">
+                    <MintTransactionHandler
+                      transaction={pendingTransaction}
+                      onComplete={handleTransactionComplete}
+                      onError={handleTransactionError}
+                    />
                   </div>
-                </div>
-              )}
+                )}
+              </ConversationContent>
+              <ConversationScrollButton />
+            </Conversation>
 
+            {error && (
+              <Alert className="mt-4" variant="destructive">
+                <AlertDescription>
+                  {error.message.includes('429') || error.message.includes('rate limit')
+                    ? 'Rate Limit Exceeded: Please wait a moment before trying again.'
+                    : `Error: ${error.message}`}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Suggested prompts - only show when no messages */}
+            {messages.length === 0 && (
+              <div className="mt-4 space-y-3">
+                <p className="text-muted-foreground text-sm font-medium">Try these examples:</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {SUGGESTED_PROMPTS.map((suggestion) => (
+                    <Button
+                      key={suggestion.title}
+                      variant="outline"
+                      size="sm"
+                      className="h-auto justify-start p-3 text-left"
+                      onClick={() => setInput(suggestion.prompt)}
+                      disabled={status !== 'ready'}
+                    >
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium">{suggestion.title}</div>
+                        <div className="text-muted-foreground line-clamp-2 text-xs">
+                          {suggestion.prompt}
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4">
               <PromptInput
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -370,15 +362,14 @@ export function ChatInterface() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask about a Shape collection, or how much gasback you can earn"
                   disabled={status !== 'ready'}
-                  minHeight={48}
-                  maxHeight={120}
+                  className="min-h-[60px] resize-none"
                 />
                 <PromptInputSubmit status={status} disabled={status !== 'ready' || !input.trim()} />
               </PromptInput>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
