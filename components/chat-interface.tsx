@@ -18,10 +18,8 @@ import { MintTransactionHandler } from './mint-transaction-handler';
 
 export function ChatInterface() {
   const { isConnected } = useAccount();
-  const { messages, input, handleInputChange, handleSubmit, status, error, setInput } = useChat({
-    api: '/api/chat',
-    maxSteps: 5, // Allow up to 5 sequential tool calls
-  });
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status, error } = useChat();
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
@@ -413,10 +411,19 @@ export function ChatInterface() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="flex gap-2">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (input.trim()) {
+                    sendMessage({ text: input });
+                    setInput('');
+                  }
+                }}
+                className="flex gap-2"
+              >
                 <Input
                   value={input}
-                  onChange={handleInputChange}
+                  onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask about a Shape collection, or how much gasback you can earn"
                   disabled={status === 'submitted' || status === 'streaming'}
                   className="flex-1 text-sm sm:text-base"
