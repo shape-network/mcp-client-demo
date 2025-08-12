@@ -1,12 +1,15 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import type { ComponentProps, HTMLAttributes, ReactNode } from 'react';
 import { createContext, useContext, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import {
+  oneDark,
+  oneLight,
+} from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 type CodeBlockContextType = {
   code: string;
@@ -34,13 +37,12 @@ export const CodeBlock = ({
   <CodeBlockContext.Provider value={{ code }}>
     <div
       className={cn(
-        'bg-background text-foreground relative w-full overflow-hidden rounded-md border',
-        className
+        'relative w-full overflow-hidden rounded-md border bg-background text-foreground',
+        className,
       )}
       {...props}
     >
       <div className="relative">
-        {/* @ts-expect-error - react-syntax-highlighter has type issues with React 19 */}
         <SyntaxHighlighter
           language={language}
           style={oneLight}
@@ -60,11 +62,10 @@ export const CodeBlock = ({
           codeTagProps={{
             className: 'font-mono text-sm',
           }}
-          className="overflow-hidden dark:hidden"
+          className="dark:hidden overflow-hidden"
         >
           {code}
         </SyntaxHighlighter>
-        {/* @ts-expect-error - react-syntax-highlighter has type issues with React 19 */}
         <SyntaxHighlighter
           language={language}
           style={oneDark}
@@ -84,12 +85,14 @@ export const CodeBlock = ({
           codeTagProps={{
             className: 'font-mono text-sm',
           }}
-          className="hidden overflow-hidden dark:block"
+          className="hidden dark:block overflow-hidden"
         >
           {code}
         </SyntaxHighlighter>
         {children && (
-          <div className="absolute top-2 right-2 flex items-center gap-2">{children}</div>
+          <div className="absolute right-2 top-2 flex items-center gap-2">
+            {children}
+          </div>
         )}
       </div>
     </div>

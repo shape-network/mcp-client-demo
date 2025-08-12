@@ -1,15 +1,15 @@
 'use client';
 
-import { cn } from '@/lib/utils';
-import hardenReactMarkdown from 'harden-react-markdown';
-import 'katex/dist/katex.min.css';
+import { CodeBlock, CodeBlockCopyButton } from './code-block';
 import type { ComponentProps, HTMLAttributes } from 'react';
 import { memo } from 'react';
 import ReactMarkdown, { type Options } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import { CodeBlock, CodeBlockCopyButton } from './code-block';
+import { cn } from '@/lib/utils';
+import 'katex/dist/katex.min.css';
+import hardenReactMarkdown from 'harden-react-markdown';
 
 /**
  * Parses markdown text and removes incomplete tokens to prevent partial rendering
@@ -123,7 +123,8 @@ function parseIncompleteMarkdown(text: string): string {
         if (result[i] === '`') {
           // Check if this backtick is part of a triple backtick sequence
           const isTripleStart = result.substring(i, i + 3) === '```';
-          const isTripleMiddle = i > 0 && result.substring(i - 1, i + 2) === '```';
+          const isTripleMiddle =
+            i > 0 && result.substring(i - 1, i + 2) === '```';
           const isTripleEnd = i > 1 && result.substring(i - 2, i + 1) === '```';
 
           if (!isTripleStart && !isTripleMiddle && !isTripleEnd) {
@@ -166,7 +167,9 @@ export type ResponseProps = HTMLAttributes<HTMLDivElement> & {
   allowedLinkPrefixes?: ComponentProps<
     ReturnType<typeof hardenReactMarkdown>
   >['allowedLinkPrefixes'];
-  defaultOrigin?: ComponentProps<ReturnType<typeof hardenReactMarkdown>>['defaultOrigin'];
+  defaultOrigin?: ComponentProps<
+    ReturnType<typeof hardenReactMarkdown>
+  >['defaultOrigin'];
   parseIncompleteMarkdown?: boolean;
 };
 
@@ -193,7 +196,7 @@ const components: Options['components'] = {
   ),
   a: ({ node, children, className, ...props }) => (
     <a
-      className={cn('text-primary font-medium underline', className)}
+      className={cn('font-medium text-primary underline', className)}
       rel="noreferrer"
       target="_blank"
       {...props}
@@ -202,32 +205,41 @@ const components: Options['components'] = {
     </a>
   ),
   h1: ({ node, children, className, ...props }) => (
-    <h1 className={cn('mt-6 mb-2 text-3xl font-semibold', className)} {...props}>
+    <h1
+      className={cn('mt-6 mb-2 font-semibold text-3xl', className)}
+      {...props}
+    >
       {children}
     </h1>
   ),
   h2: ({ node, children, className, ...props }) => (
-    <h2 className={cn('mt-6 mb-2 text-2xl font-semibold', className)} {...props}>
+    <h2
+      className={cn('mt-6 mb-2 font-semibold text-2xl', className)}
+      {...props}
+    >
       {children}
     </h2>
   ),
   h3: ({ node, children, className, ...props }) => (
-    <h3 className={cn('mt-6 mb-2 text-xl font-semibold', className)} {...props}>
+    <h3 className={cn('mt-6 mb-2 font-semibold text-xl', className)} {...props}>
       {children}
     </h3>
   ),
   h4: ({ node, children, className, ...props }) => (
-    <h4 className={cn('mt-6 mb-2 text-lg font-semibold', className)} {...props}>
+    <h4 className={cn('mt-6 mb-2 font-semibold text-lg', className)} {...props}>
       {children}
     </h4>
   ),
   h5: ({ node, children, className, ...props }) => (
-    <h5 className={cn('mt-6 mb-2 text-base font-semibold', className)} {...props}>
+    <h5
+      className={cn('mt-6 mb-2 font-semibold text-base', className)}
+      {...props}
+    >
       {children}
     </h5>
   ),
   h6: ({ node, children, className, ...props }) => (
-    <h6 className={cn('mt-6 mb-2 text-sm font-semibold', className)} {...props}>
+    <h6 className={cn('mt-6 mb-2 font-semibold text-sm', className)} {...props}>
       {children}
     </h6>
   ),
@@ -282,7 +294,10 @@ export const Response = memo(
 
     return (
       <div
-        className={cn('size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0', className)}
+        className={cn(
+          'size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
+          className,
+        )}
         {...props}
       >
         <HardenedMarkdown
@@ -299,5 +314,5 @@ export const Response = memo(
       </div>
     );
   },
-  (prevProps, nextProps) => prevProps.children === nextProps.children
+  (prevProps, nextProps) => prevProps.children === nextProps.children,
 );
