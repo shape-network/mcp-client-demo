@@ -1,7 +1,7 @@
 import { config } from '@/lib/config';
 import { openai } from '@ai-sdk/openai';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { experimental_createMCPClient, stepCountIs, streamText } from 'ai';
+import { convertToModelMessages, experimental_createMCPClient, stepCountIs, streamText } from 'ai';
 
 export const maxDuration = 30;
 
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   const result = streamText({
     model: openai('gpt-4o'),
     tools,
-    messages,
+    messages: convertToModelMessages(messages),
     stopWhen: stepCountIs(5),
     system: `You are a helpful assistant for Shape Network blockchain data and Web3 operations.
 
