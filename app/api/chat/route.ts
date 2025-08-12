@@ -1,7 +1,7 @@
 import { config } from '@/lib/config';
 import { openai } from '@ai-sdk/openai';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { experimental_createMCPClient, streamText } from 'ai';
+import { experimental_createMCPClient, stepCountIs, streamText } from 'ai';
 
 export const maxDuration = 30;
 
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     model: openai('gpt-4o'),
     tools,
     messages,
-    maxSteps: 5,
+    stopWhen: stepCountIs(5),
     system: `You are a helpful assistant for Shape Network blockchain data and Web3 operations.
 
 You have access to multiple tools that can be chained together to provide comprehensive answers:
@@ -32,5 +32,5 @@ IMPORTANT: Always try to use the available tools first.`,
     },
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
