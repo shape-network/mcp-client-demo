@@ -15,11 +15,10 @@ export async function POST(req: Request) {
 
   const tools = await mcpClient.tools();
 
-  const result = await streamText({
+  const result = streamText({
     model: openai('gpt-4o'),
     tools,
     messages,
-    maxSteps: 5,
     system: `You are a helpful assistant for Shape Network blockchain data and Web3 operations.
 
 You have access to multiple tools that can be chained together to provide comprehensive answers:
@@ -32,5 +31,5 @@ IMPORTANT: Always try to use the available tools first.`,
     },
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
