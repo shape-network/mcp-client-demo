@@ -18,14 +18,82 @@ import { MintTransactionHandler } from './mint-transaction-handler';
 
 export function ChatInterface() {
   const { isConnected } = useAccount();
-  const { messages, input, handleInputChange, handleSubmit, status, error, setInput } = useChat({
-    api: '/api/chat',
-    maxSteps: 5, // Allow up to 5 sequential tool calls
-  });
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status, error } = useChat();
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
   const [pendingTransaction, setPendingTransaction] = useState<PrepareMintSVGNFTData | null>(null);
+
+  const getMessageTextContent = useCallback(
+    (message: { parts?: Array<{ type?: string; text?: string }> }): string => {
+      if (message.parts) {
+        return message.parts
+          .filter((part) => part.type === 'text')
+          .map((part) => part.text || '')
+          .join('');
+      }
+      return '';
+    },
+    []
+  );
+
+  const detectTransactionResponse = useCallback(
+    (message: {
+      parts?: Array<{ type?: string; text?: string }>;
+    }): PrepareMintSVGNFTData | null => {
+      const content = getMessageTextContent(message);
+
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
+          return parsed as PrepareMintSVGNFTData;
+        }
+      } catch {
+        const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
+        const match = content.match(jsonBlockRegex);
+        if (match) {
+          const parsed = JSON.parse(match[1]);
+          if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
+            return parsed as PrepareMintSVGNFTData;
+          }
+        }
+        const jsonRegex =
+          /\{[\s\S]*"success"\s*:\s*true[\s\S]*"transaction"[\s\S]*"mintNFT"[\s\S]*\}/;
+        const jsonMatch = content.match(jsonRegex);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
+            return parsed as PrepareMintSVGNFTData;
+          }
+        }
+      }
+      return null;
+    },
+    [getMessageTextContent]
+  );
+
+  const handleTransactionComplete = useCallback((hash: string) => {
+    console.log('Transaction completed:', hash);
+    setPendingTransaction(null);
+  }, []);
+
+  const handleTransactionError = useCallback((error: string) => {
+    console.error('Transaction failed:', error);
+    setPendingTransaction(null);
+  }, []);
+
+  const toggleMessageExpansion = (messageId: string) => {
+    setExpandedMessages((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -50,20 +118,21 @@ export function ChatInterface() {
     for (const message of messages) {
       if (message.role === 'assistant') {
         // First check the message content
-        let transaction = detectTransactionResponse(message.content);
+        let transaction = detectTransactionResponse(message);
 
         // If not found in content, check tool results
         if (!transaction && message.parts) {
           for (const part of message.parts) {
             if (
-              part.type === 'tool-invocation' &&
-              part.toolInvocation.state === 'result' &&
-              part.toolInvocation.toolName === 'prepareMintSVGNFT'
+              part.type?.startsWith('tool-') &&
+              'state' in part &&
+              part.state === 'output-available' &&
+              part.type === 'tool-prepareMintSVGNFT'
             ) {
               try {
-                const toolResult = part.toolInvocation.result;
-                if (toolResult?.content?.[0]?.text) {
-                  const parsed = JSON.parse(toolResult.content[0].text);
+                const toolResult = 'output' in part ? part.output : null;
+                if (typeof toolResult === 'string') {
+                  const parsed = JSON.parse(toolResult);
                   if (
                     parsed.success &&
                     parsed.transaction &&
@@ -86,57 +155,7 @@ export function ChatInterface() {
         }
       }
     }
-  }, [messages, pendingTransaction]);
-
-  const toggleMessageExpansion = (messageId: string) => {
-    setExpandedMessages((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(messageId)) {
-        newSet.delete(messageId);
-      } else {
-        newSet.add(messageId);
-      }
-      return newSet;
-    });
-  };
-
-  const detectTransactionResponse = (content: string): PrepareMintSVGNFTData | null => {
-    try {
-      const parsed = JSON.parse(content);
-      if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
-        return parsed as PrepareMintSVGNFTData;
-      }
-    } catch {
-      const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
-      const match = content.match(jsonBlockRegex);
-      if (match) {
-        const parsed = JSON.parse(match[1]);
-        if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
-          return parsed as PrepareMintSVGNFTData;
-        }
-      }
-      const jsonRegex =
-        /\{[\s\S]*"success"\s*:\s*true[\s\S]*"transaction"[\s\S]*"mintNFT"[\s\S]*\}/;
-      const jsonMatch = content.match(jsonRegex);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (parsed.success && parsed.transaction && parsed.metadata?.functionName === 'mintNFT') {
-          return parsed as PrepareMintSVGNFTData;
-        }
-      }
-    }
-    return null;
-  };
-
-  const handleTransactionComplete = useCallback((hash: string) => {
-    console.log('Transaction completed:', hash);
-    setPendingTransaction(null);
-  }, []);
-
-  const handleTransactionError = useCallback((error: string) => {
-    console.error('Transaction failed:', error);
-    setPendingTransaction(null);
-  }, []);
+  }, [messages, pendingTransaction, detectTransactionResponse]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -193,20 +212,21 @@ export function ChatInterface() {
 
                     if (message.role === 'assistant') {
                       // First check the message content
-                      transaction = detectTransactionResponse(message.content);
+                      transaction = detectTransactionResponse(message);
 
                       // If not found in content, check tool results
                       if (!transaction && message.parts) {
                         for (const part of message.parts) {
                           if (
-                            part.type === 'tool-invocation' &&
-                            part.toolInvocation.state === 'result' &&
-                            part.toolInvocation.toolName === 'prepareMintSVGNFT'
+                            part.type?.startsWith('tool-') &&
+                            'state' in part &&
+                            part.state === 'output-available' &&
+                            part.type === 'tool-prepareMintSVGNFT'
                           ) {
                             try {
-                              const toolResult = part.toolInvocation.result;
-                              if (toolResult?.content?.[0]?.text) {
-                                const parsed = JSON.parse(toolResult.content[0].text);
+                              const toolResult = 'output' in part ? part.output : null;
+                              if (typeof toolResult === 'string') {
+                                const parsed = JSON.parse(toolResult);
                                 if (
                                   parsed.success &&
                                   parsed.transaction &&
@@ -253,13 +273,13 @@ export function ChatInterface() {
                           >
                             <div className="prose prose-sm prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 max-w-none break-words [&_img]:max-h-48 [&_img]:max-w-xs [&_img]:object-contain">
                               <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {message.content}
+                                {getMessageTextContent(message)}
                               </ReactMarkdown>
                             </div>
 
                             {/* Show tool indicator when tools were used */}
                             {message.role === 'assistant' &&
-                              message.parts?.some((part) => part.type === 'tool-invocation') && (
+                              message.parts?.some((part) => part.type?.startsWith('tool-')) && (
                                 <button
                                   onClick={() => toggleMessageExpansion(message.id)}
                                   className="text-muted-foreground hover:text-foreground hover:bg-muted/50 mt-2 -ml-1 flex items-center gap-2 rounded p-1 text-xs transition-colors"
@@ -272,12 +292,11 @@ export function ChatInterface() {
                                   <span>
                                     🔧{' '}
                                     {
-                                      message.parts.filter(
-                                        (part) => part.type === 'tool-invocation'
-                                      ).length
+                                      message.parts.filter((part) => part.type?.startsWith('tool-'))
+                                        .length
                                     }{' '}
                                     tool
-                                    {message.parts.filter((part) => part.type === 'tool-invocation')
+                                    {message.parts.filter((part) => part.type?.startsWith('tool-'))
                                       .length > 1
                                       ? 's'
                                       : ''}{' '}
@@ -288,31 +307,34 @@ export function ChatInterface() {
 
                             {/* Display tool calls if expanded */}
                             {expandedMessages.has(message.id) &&
-                              message.parts?.some((part) => part.type === 'tool-invocation') && (
+                              message.parts?.some((part) => part.type?.startsWith('tool-')) && (
                                 <div className="mt-3 border-t pt-3">
                                   <div className="space-y-3">
                                     {message.parts
-                                      .filter((part) => part.type === 'tool-invocation')
+                                      .filter((part) => part.type?.startsWith('tool-'))
                                       .map((part, index) => (
                                         <div
-                                          key={part.toolInvocation.toolCallId}
+                                          key={
+                                            ('toolCallId' in part ? part.toolCallId : null) || index
+                                          }
                                           className="space-y-2"
                                         >
                                           <div className="text-muted-foreground text-xs font-medium">
-                                            Step {index + 1}: {part.toolInvocation.toolName}
+                                            Step {index + 1}:{' '}
+                                            {part.type?.replace('tool-', '') || 'Unknown Tool'}
                                           </div>
-                                          {part.toolInvocation.state === 'result' && (
-                                            <div className="bg-background/50 rounded p-2 text-sm">
-                                              <pre className="overflow-x-auto text-xs whitespace-pre-wrap sm:text-sm">
-                                                {JSON.stringify(
-                                                  part.toolInvocation.result,
-                                                  null,
-                                                  2
-                                                )}
-                                              </pre>
-                                            </div>
-                                          )}
-                                          {part.toolInvocation.state === 'call' && (
+                                          {'state' in part &&
+                                            part.state === 'output-available' &&
+                                            'output' in part && (
+                                              <div className="bg-background/50 rounded p-2 text-sm">
+                                                <pre className="overflow-x-auto text-xs whitespace-pre-wrap sm:text-sm">
+                                                  {typeof part.output === 'string'
+                                                    ? part.output
+                                                    : JSON.stringify(part.output, null, 2)}
+                                                </pre>
+                                              </div>
+                                            )}
+                                          {'state' in part && part.state === 'input-streaming' && (
                                             <div className="rounded bg-blue-50 p-2 text-sm text-blue-700">
                                               Executing tool...
                                             </div>
@@ -413,10 +435,19 @@ export function ChatInterface() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="flex gap-2">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (input.trim()) {
+                    sendMessage({ text: input });
+                    setInput('');
+                  }
+                }}
+                className="flex gap-2"
+              >
                 <Input
                   value={input}
-                  onChange={handleInputChange}
+                  onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask about a Shape collection, or how much gasback you can earn"
                   disabled={status === 'submitted' || status === 'streaming'}
                   className="flex-1 text-sm sm:text-base"
