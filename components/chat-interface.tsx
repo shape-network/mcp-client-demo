@@ -10,6 +10,8 @@ import {
   PromptInput,
   PromptInputSubmit,
   PromptInputTextarea,
+  PromptInputToolbar,
+  PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
 import { Response } from '@/components/ai-elements/response';
 import {
@@ -140,7 +142,7 @@ export function ChatInterface() {
   }, [messages, pendingTransaction, detectTransactionResponse]);
 
   return (
-    <div className="relative flex size-full h-full flex-col">
+    <div className="relative flex size-full h-full max-h-[750px] flex-col">
       {!isConnected ? (
         <div className="flex h-full items-center justify-center">
           <div className="space-y-4 text-center">
@@ -155,10 +157,7 @@ export function ChatInterface() {
         </div>
       ) : (
         <>
-          <Conversation
-            className="debug relative flex-1 rounded-xl border"
-            style={{ height: '500px' }}
-          >
+          <Conversation className="relative h-[500px] w-full flex-1 rounded-lg border">
             <ConversationContent>
               {messages.length === 0 && (
                 <div className="flex h-full items-center justify-center">
@@ -329,9 +328,9 @@ export function ChatInterface() {
                     onClick={() => setInput(suggestion.prompt)}
                     disabled={status !== 'ready'}
                   >
-                    <div className="space-y-1">
+                    <div className="space-y-1 truncate">
                       <div className="text-sm font-medium">{suggestion.title}</div>
-                      <div className="text-muted-foreground line-clamp-2 text-xs">
+                      <div className="text-muted-foreground truncate text-xs">
                         {suggestion.prompt}
                       </div>
                     </div>
@@ -351,14 +350,20 @@ export function ChatInterface() {
                 }
               }}
             >
-              <PromptInputTextarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about a Shape collection, or how much gasback you can earn"
-                disabled={status !== 'ready'}
-                className="min-h-[60px] resize-none"
-              />
-              <PromptInputSubmit status={status} disabled={status !== 'ready' || !input.trim()} />
+              <PromptInputToolbar>
+                <PromptInputTools>
+                  <PromptInputTextarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Ask about a Shape collection, or how much gasback you can earn"
+                    disabled={status !== 'ready'}
+                  />
+                  <PromptInputSubmit
+                    status={status}
+                    disabled={status !== 'ready' || !input.trim()}
+                  />
+                </PromptInputTools>
+              </PromptInputToolbar>
             </PromptInput>
           </div>
         </>
